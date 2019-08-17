@@ -1,0 +1,31 @@
+#!/bin/bash
+cd ${WORKING_PATH}
+export -n JAVA_TOOL_OPTIONS="-Xms2000m -Xmx10000m"
+export PATH=${WORKING_PATH}/bin:$PATH
+
+mkdir data
+{{ scripts }}
+
+export LD_LIBRARY_PATH="lib:${LD_LIBRARY_PATH}"
+env
+CMD=`pwd`
+echo ${CMD}
+export PYTHONPATH=${CMD}:$PYTHONPATH
+export CLASSPATH=$HADOOP_PREFIX/lib/classpath_hdfs.jar
+
+echo "{{ job_script }}"
+. ./conda/etc/profile.d/conda.sh
+conda activate
+
+
+{% for i in times %}
+echo "Start job {{ i }}."
+rm ./data/out -r
+mkdir /job_data/{{ i }}
+ln -s /job_data/{{ i }} ./data/out
+rm ./logs -r
+mkdir /job_tboard/{{ i }}
+ln -s /job_tboard/{{ i }} ./logs
+python -m torch.distributed.launch --nproc_per_node={{ pods }} {{ job_script }}
+echo "Current job finished."
+{% endfor %}

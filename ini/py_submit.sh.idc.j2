@@ -1,0 +1,5 @@
+#!/bin/bash
+echo {{ job_name }}
+rm {{ upload_dir }}/logs/*
+rm {{ upload_dir }}/data/out/*
+traincli submit -c ./gpucluster.yaml -f ./py_job.yaml -t ./

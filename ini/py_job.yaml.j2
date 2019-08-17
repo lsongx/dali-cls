@@ -1,0 +1,15 @@
+REQUIRED:
+#WARNNING: JOB_NAME must be uniq
+  JOB_NAME: "{{ job_name }}"
+  JOB_PASSWD: "duibuqi"
+  UPLOAD_DIR: "{{ upload_dir }}"
+  WORKER_MIN_NUM: {{ worker }}
+  WORKER_MAX_NUM: {{ worker }}
+  GPU_PER_WORKER: {{ pods }}
+  PROJECT_ID: AR5019102
+  RUN_SCRIPTS: "sh ${WORKING_PATH}/py_job.sh"
+
+OPTIONAL:
+  PRIORITY: {{ priority }}  # [1-5], highest:5
+  DOCKER_IMAGE: "{{ docker_image }}"
+  WALL_TIME: {{ walltime }}
