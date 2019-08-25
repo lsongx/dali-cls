@@ -6,6 +6,9 @@ import argparse
 import time
 import jinja2
 import easydict
+import subprocess
+
+import local_id_db_utils as db
 
 # mycluster1: IDC
 # mycluster2: IDC-small
@@ -175,7 +178,22 @@ def multiple_submit(value_configs):
         yield v_dict
 
 
+def submit_and_update_local_id_db(submit_command, server, id_db='~/.hobot/ids.db'):
+    r = subprocess.run(submit_command, shell=True, stdout=subprocess.PIPE)
+    for l in r.stdout.decode('utf-8').split('\n'):
+        if 'Use jobname' in l:
+            job_name = l.split('Use jobname: ')[-1]
+    db.add_new_jobname_server(job_name, server, id_db)
+    print(r)
+
+
 def main(args):
+    """Submit frameworks:
+    1. create py_submit.sh
+    2. create py_job.sh
+    3. submit, update local id db, update local log path
+    """
+
     with open(args.ini_path, 'r') as f:
         ini_file = convert_multi_line(f)
     config = configparser.ConfigParser()
@@ -206,11 +224,11 @@ def main(args):
     config_job['REAP_RUN'] = list(range(int(config_job['REAP_RUN'])))
 
     # write cluster config file
+    server = CLUSTER_ID_TO_STR[cluster_id+cluster_id_extra]
     with open('./gpucluster.yaml', 'w') as f:
         f.write(
             CLUSTER_STR +
-            f'\ncurrent-cluster: mycluster'
-            f'{CLUSTER_ID_TO_STR[cluster_id+cluster_id_extra]}'
+            f'\ncurrent-cluster: mycluster{server}'
         )
 
     # multiple submit
@@ -279,7 +297,8 @@ def main(args):
         os.system("chmod 700 py_submit.sh")
         os.system(f"chmod 700 ./{config_job['FILE_FOLDER']}/py_job.sh")
         if args.run_submit:
-            os.system("./py_submit.sh")
+            # os.system("./py_submit.sh")
+            submit_and_update_local_id_db("./py_submit.sh", server)
             print('-'*70)
 
 
