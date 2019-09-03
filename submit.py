@@ -178,13 +178,28 @@ def multiple_submit(value_configs):
         yield v_dict
 
 
-def submit_and_update_local_id_db(submit_command, server, id_db='~/.hobot/ids.db'):
-    r = subprocess.run(submit_command, shell=True, stdout=subprocess.PIPE)
-    for l in r.stdout.decode('utf-8').split('\n'):
+def submit_and_update_local_id_db(submit_command, 
+                                  server, 
+                                  id_db='~/.hobot/ids.db',
+                                  local_log_path='./job-logs'):
+    r = subprocess.run(
+        submit_command, shell=True, 
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE
+    )
+    output = r.stdout + r.stderr
+    output = output.decode('utf-8')
+    for l in output.split('\n'):
         if 'Use jobname' in l:
             job_name = l.split('Use jobname: ')[-1]
-    db.add_new_jobname_server(job_name, server, id_db)
-    print(r)
+    if '~' in id_db:
+        id_db = os.path.expanduser(id_db)
+    new_local_id = db.add_new_jobname_server(job_name, server, id_db)
+    print(output)
+    if 'ERR' not in output:
+        if not os.path.isdir(local_log_path):
+            os.mkdir(local_log_path)
+        os.system(
+            f'touch {os.path.join(local_log_path, str(new_local_id))}.txt')
 
 
 def main(args):
