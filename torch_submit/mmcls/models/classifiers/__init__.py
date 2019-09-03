@@ -1,3 +1,4 @@
 from .base import BaseClassifier
+from .hybrid import HybridForward
 
-__all__ = ['BaseClassifier', ]
+__all__ = ['BaseClassifier', 'HybridForward']

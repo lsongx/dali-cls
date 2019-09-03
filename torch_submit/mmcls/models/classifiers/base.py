@@ -66,3 +66,6 @@ class BaseClassifier(nn.Module):
         losses['loss'] = self.loss(outputs, labels)
         losses['acc'] = accuracy(outputs, labels)[0]
         return losses
+
+    def get_model(self):
+        return self.backbone.state_dict()
