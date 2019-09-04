@@ -10,7 +10,7 @@ import torch
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Train a detector')
-    parser.add_argument('--config', default='', help='train config file path')
+    parser.add_argument('--config', default='./configs/res50_ce.py', help='train config file path')
     parser.add_argument('--work_dir', default='./data/out',
                         help='the dir to save logs and models')
     parser.add_argument(
@@ -34,34 +34,32 @@ def parse_args():
 
     parser.add_argument(
         '--data.train_cfg.reader_cfg.path', type=str,
-        default='/home/users/liangchen.song/data/imagenet'
-                '/imagenet-rec/train_orig.rec'
+        # default='~/data/imagenet/imagenet-rec/train_orig.rec'
+        default='~/data/imagenet/imagenet-rec/val_c224_q95.rec'
     )
     parser.add_argument(
         '--data.train_cfg.reader_cfg.index_path', type=str,
-        default='/home/users/liangchen.song/data/imagenet'
-                '/imagenet-rec/train_orig.idx'
+        # default='~/data/imagenet/imagenet-rec/train_orig.idx'
+        default='~/data/imagenet/imagenet-rec/val_c224_q95.idx'
     )
     parser.add_argument(
         '--data.val_cfg_fast.reader_cfg.path', type=str,
-        default='/home/users/liangchen.song/data/imagenet'
-                # '/val.rec'
-                '/imagenet-rec/val_c224_q95.rec'
+        default='~/data/imagenet/imagenet-rec/val_c224_q95.rec'
     )
     parser.add_argument(
         '--data.val_cfg_fast.reader_cfg.index_path', type=str,
-        default='/home/users/liangchen.song/data/imagenet'
-                # '/val.idx'
-                '/imagenet-rec/val_c224_q95.idx'
+        default='~/data/imagenet/imagenet-rec/val_c224_q95.idx'
     )
-    parser.add_argument(
-        '--data.val_cfg_fast.reader_cfg.file_root', type=str,
-        default='/home/users/liangchen.song/data/imagenet/val'
-    )
+    # parser.add_argument(
+    #     '--data.val_cfg_fast.reader_cfg.file_root', type=str,
+    #     default='~/data/imagenet/val'
+    # )
     parser.add_argument(
         '--data.val_cfg_accurate.dataset_cfg.root', type=str,
-        default='/home/users/liangchen.song/data/imagenet/val'
+        default='~/data/imagenet/val'
     )
+    parser.add_argument('--model.pretrained', type=str, 
+                        default='~/data/models/resnet50-19c8e357.pth')
     parser.add_argument('--data.train_cfg.batch_size', type=int, default=2)
     parser.add_argument('--log_config.interval', type=int, default=1)
     parser.add_argument('--optimizer.lr', type=float, default=0.1)

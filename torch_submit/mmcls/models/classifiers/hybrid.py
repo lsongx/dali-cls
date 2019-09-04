@@ -97,8 +97,8 @@ class HybridForward(nn.Module):
             # swith feature map
             t_out_line, s_out_line = s_out_line, t_out_line
             with torch.no_grad():
-                t_out_line = self.teacher_net[*t](t_out_line)
-            s_out_line = self.student_net[*s](s_out_line)
+                t_out_line = self.teacher_net[t[0]:t[1]](t_out_line)
+            s_out_line = self.student_net[s[0]:s[1]](s_out_line)
         adjust_bn_tracking(self.student_net, True)
         s_out = self.student_net(imgs)
         losses = self.get_loss(t_out_line, s_out_line, s_out, labels)

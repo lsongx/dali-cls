@@ -47,7 +47,8 @@ class DistEvalHook(Hook):
         self.best_top1 = 0
         self.logger = logger
 
-    def after_train_epoch(self, runner):
+    def before_train_epoch(self, runner):
+    # def after_train_epoch(self, runner):
         if not self.every_n_epochs(runner, self.interval):
             return
         if runner.epoch > self.switch_loader_epoch:
@@ -68,7 +69,7 @@ class DistEvalHook(Hook):
                 self.bestname = f'checkpoint_{self.best_top1:.2f}.pth'
                 if self.logger is not None:
                     self.logger.info(f'Saving best {self.bestname}.')
-            save_checkpoint(runner.model.get_model(), is_best, self.out_dir,
+            save_checkpoint(runner.model.module.get_model(), is_best, self.out_dir,
                             bestname=self.bestname)
         dist.barrier()
 
