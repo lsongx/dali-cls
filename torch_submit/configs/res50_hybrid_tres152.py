@@ -3,22 +3,31 @@ fp16 = dict(loss_scale=512.)
 
 # model settings
 model = dict(
-    type='BaseClassifier',
-    backbone=dict(
-        type='resnet50',
-        implement='torchvision'),
+    type='Hybrid',
+    teacher_net=dict(
+        type='SequenceResNet',
+        depth=152,
+        implement='local'),
+    student_net=dict(
+        type='SequenceResNet',
+        depth=50,
+        implement='local'),
     loss=dict(
         type='CrossEntropySmoothLoss',
         implement='local',
         smoothing=0.1),
-    backbone_init_cfg='dw_conv',
-    pretrained=None)
+    # teacher_connect_index=(7, 15, 51, 54),
+    # student_connect_index=(7, 11, 17, 20),
+    teacher_connect_index=(15, 54),
+    student_connect_index=(11, 20),
+    teacher_pretrained='./data/resnet152-b121ed2d.pth',
+    student_backbone_init_cfg='dw_conv')
 # dataset settings
 data = dict(
     train_cfg=dict(
         type='train',
         engine='dali',
-        batch_size=128,
+        batch_size=64,
         num_threads=16,
         augmentations=[
             dict(type='ImageDecoderRandomCrop', device='mixed'),
@@ -64,8 +73,9 @@ data = dict(
         num_workers=8,
         dataset_cfg=dict(root="./data/val")))
 # optimizer
-optimizer = dict(type='SGD', lr=0.5, momentum=0.9, weight_decay=1e-4)
+optimizer = dict(type='SGD', lr=0.1, momentum=0.9, weight_decay=1e-4)
 # learning policy
+# lr_config = dict(policy='cosine', warmup='linear', warmup_iters=5008, target_lr=1e-4, by_epoch=False)
 lr_config = dict(policy='cosine', target_lr=1e-4, by_epoch=False)
 # misc settings
 log_config = dict(
@@ -74,7 +84,7 @@ log_config = dict(
         dict(type='TextLoggerHook'),
         dict(type='TensorboardLoggerHook', log_dir='./logs')
     ])
-evaluation = dict(interval=1, switch_loader_epoch=100)
+evaluation = dict(interval=1, switch_loader_epoch=110)
 total_epochs = 120
 dist_params = dict(backend='nccl')
 log_level = 'INFO'

@@ -47,8 +47,7 @@ class DistEvalHook(Hook):
         self.best_top1 = 0
         self.logger = logger
 
-    def before_train_epoch(self, runner):
-    # def after_train_epoch(self, runner):
+    def after_train_epoch(self, runner):
         if not self.every_n_epochs(runner, self.interval):
             return
         if runner.epoch > self.switch_loader_epoch:

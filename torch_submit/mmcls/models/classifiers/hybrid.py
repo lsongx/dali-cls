@@ -21,8 +21,12 @@ from ..registry import CLASSIFIERS
 def get_output_channels(module_layer):
     if isinstance(module_layer, nn.Conv2d):
         return module_layer.out_channels
-    else:
-        raise NotImplementedError
+    child_modules = list(module_layer.children())
+    if len(child_modules) > 1:
+        for child in child_modules[::-1]:
+            if isinstance(child, nn.Conv2d):
+                return child.out_channels
+    raise NotImplementedError
 
 
 def expand_connect_index(connect_index, end_index):
@@ -43,7 +47,7 @@ def adjust_bn_tracking(model, mode):
 
 
 @CLASSIFIERS.register_module
-class HybridForward(nn.Module):
+class Hybrid(nn.Module):
     """Base class for Classifiers"""
 
     def __init__(self, 
@@ -57,7 +61,7 @@ class HybridForward(nn.Module):
                  teacher_backbone_init_cfg=None,
                  student_backbone_init_cfg=None,
                  save_only_student=False):
-        super(HybridForward, self).__init__()
+        super(Hybrid, self).__init__()
         self.fp16_enabled = False
         self.teacher_net = builder.build_backbone(teacher_net)
         self.student_net = builder.build_backbone(student_net)
@@ -67,18 +71,21 @@ class HybridForward(nn.Module):
         self.student_connect_index = student_connect_index
         self.save_only_student = save_only_student
 
-        self.init_weights(teacher_pretrained, teacher_backbone_init_cfg)
-        self.init_weights(student_pretrained, student_backbone_init_cfg)
+        self.init_weights(self.teacher_net, 
+                          teacher_pretrained, teacher_backbone_init_cfg)
+        self.init_weights(self.student_net, 
+                          student_pretrained, student_backbone_init_cfg)
         self.init_connect_module_list()
 
-    def init_weights(self, pretrained, backbone_init_cfg):
+    @staticmethod
+    def init_weights(net, pretrained, backbone_init_cfg):
         # even pretrained, still need init for eps
         if isinstance(backbone_init_cfg, str):
             initializer = getattr(mmcls.models.initializers, backbone_init_cfg)
-            initializer(self.backbone)
+            initializer(net.ori_net)
         if pretrained is not None:
             logger = logging.getLogger()
-            load_checkpoint(self.backbone, pretrained, map_location='cpu',
+            load_checkpoint(net.ori_net, pretrained, map_location='cpu',
                             strict=False, logger=logger)
             logger.info('load model from: {}'.format(pretrained))
 
@@ -93,12 +100,16 @@ class HybridForward(nn.Module):
         t_out_line = imgs
         s_out_line = imgs
         adjust_bn_tracking(self.student_net, False)
-        for t, s in zip(self.t_idx, self.s_idx):
+        for idx, (t, s) in enumerate(zip(self.t_idx, self.s_idx)):
             # swith feature map
             t_out_line, s_out_line = s_out_line, t_out_line
             with torch.no_grad():
-                t_out_line = self.teacher_net[t[0]:t[1]](t_out_line)
-            s_out_line = self.student_net[s[0]:s[1]](s_out_line)
+                t_out_line = \
+                    self.teacher_net.sequence_warp[t[0]:t[1]](t_out_line)
+            s_out_line = self.student_net.sequence_warp[s[0]:s[1]](s_out_line)
+            if idx > 0 and not self.ignore_conn_mask[idx-1]:
+                t_out_line = self.s2t_conv_list[idx](t_out_line)
+                s_out_line = self.t2s_conv_list[idx](s_out_line)
         adjust_bn_tracking(self.student_net, True)
         s_out = self.student_net(imgs)
         losses = self.get_loss(t_out_line, s_out_line, s_out, labels)
@@ -125,13 +136,20 @@ class HybridForward(nn.Module):
         return self.state_dict()
 
     def init_connect_module_list(self):
+        self.ignore_conn_mask = []
         self.t2s_conv_list = nn.ModuleList()
         self.s2t_conv_list = nn.ModuleList()
-        for tc, sc in zip(
+        for t_i, s_i in zip(
             self.teacher_connect_index, self.student_connect_index):
+            tc = get_output_channels(self.teacher_net.sequence_warp[t_i-1])
+            sc = get_output_channels(self.student_net.sequence_warp[s_i-1])
+            if tc == sc:
+                self.ignore_conn_mask.append(True)
+                continue
+            self.ignore_conn_mask.append(False)
             self.t2s_conv_list.append(nn.Conv2d(tc, sc, 1))
             self.s2t_conv_list.append(nn.Conv2d(sc, tc, 1))
         self.t_idx = expand_connect_index(self.teacher_connect_index, 
-                                          len(self.teacher_net))
-        self.s_idx = expand_connect_index(self.studnet_connect_index,
-                                          len(self.studnet_net))
+                                          len(self.teacher_net.sequence_warp))
+        self.s_idx = expand_connect_index(self.student_connect_index,
+                                          len(self.student_net.sequence_warp))
