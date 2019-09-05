@@ -34,13 +34,13 @@ def parse_args():
 
     parser.add_argument(
         '--data.train_cfg.reader_cfg.path', type=str,
-        # default='~/data/imagenet/imagenet-rec/train_orig.rec'
-        default='~/data/imagenet/imagenet-rec/val_c224_q95.rec'
+        default='~/data/imagenet/imagenet-rec/train_orig.rec'
+        # default='~/data/imagenet/imagenet-rec/val_c224_q95.rec'
     )
     parser.add_argument(
         '--data.train_cfg.reader_cfg.index_path', type=str,
-        # default='~/data/imagenet/imagenet-rec/train_orig.idx'
-        default='~/data/imagenet/imagenet-rec/val_c224_q95.idx'
+        default='~/data/imagenet/imagenet-rec/train_orig.idx'
+        # default='~/data/imagenet/imagenet-rec/val_c224_q95.idx'
     )
     parser.add_argument(
         '--data.val_cfg_fast.reader_cfg.path', type=str,
