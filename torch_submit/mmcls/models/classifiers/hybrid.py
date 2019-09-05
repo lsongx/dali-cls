@@ -58,9 +58,15 @@ class Hybrid(nn.Module):
                  student_connect_index,
                  teacher_pretrained, 
                  student_pretrained=None, 
+                 teacher_channels=None,
+                 student_channels=None,
                  teacher_backbone_init_cfg=None,
                  student_backbone_init_cfg=None,
+                 ori_net_path_loss_alpha=0.5,
                  save_only_student=False):
+        """teacher_channels, student_channels are the channels 
+        of the connecting node.
+        """
         super(Hybrid, self).__init__()
         self.fp16_enabled = False
         self.teacher_net = builder.build_backbone(teacher_net)
@@ -69,12 +75,14 @@ class Hybrid(nn.Module):
         assert len(teacher_connect_index) == len(student_connect_index)
         self.teacher_connect_index = teacher_connect_index
         self.student_connect_index = student_connect_index
+        self.ori_net_path_loss_alpha = ori_net_path_loss_alpha
         self.save_only_student = save_only_student
 
-        self.init_weights(self.teacher_net, 
-                          teacher_pretrained, teacher_backbone_init_cfg)
-        self.init_weights(self.student_net, 
-                          student_pretrained, student_backbone_init_cfg)
+        self.init_conn_channels(teacher_channels, student_channels)
+        self.init_weights(self.teacher_net, teacher_pretrained, 
+                          teacher_backbone_init_cfg)
+        self.init_weights(self.student_net, student_pretrained, 
+                          student_backbone_init_cfg)
         self.init_connect_module_list()
 
     @staticmethod
@@ -103,13 +111,13 @@ class Hybrid(nn.Module):
         for idx, (t, s) in enumerate(zip(self.t_idx, self.s_idx)):
             # swith feature map
             t_out_line, s_out_line = s_out_line, t_out_line
+            if idx > 0 and not self.ignore_conn_mask[idx-1]:
+                t_out_line = self.s2t_conv_list[idx-1](t_out_line)
+                s_out_line = self.t2s_conv_list[idx-1](s_out_line)
             with torch.no_grad():
                 t_out_line = \
                     self.teacher_net.sequence_warp[t[0]:t[1]](t_out_line)
             s_out_line = self.student_net.sequence_warp[s[0]:s[1]](s_out_line)
-            if idx > 0 and not self.ignore_conn_mask[idx-1]:
-                t_out_line = self.s2t_conv_list[idx](t_out_line)
-                s_out_line = self.t2s_conv_list[idx](s_out_line)
         adjust_bn_tracking(self.student_net, True)
         s_out = self.student_net(imgs)
         losses = self.get_loss(t_out_line, s_out_line, s_out, labels)
@@ -122,9 +130,12 @@ class Hybrid(nn.Module):
     @force_fp32(apply_to=('t_out_line', 's_out_line', 's_out',))
     def get_loss(self, t_out_line, s_out_line, s_out, labels):
         losses = dict()
-        losses['t_line_loss'] = self.loss(t_out_line, labels) * 0.5
-        losses['s_line_loss'] = self.loss(s_out_line, labels) * 0.5
-        losses['s_loss'] = self.loss(s_out, labels) * 0.5
+        losses['t_line_loss'] = \
+            self.loss(t_out_line, labels) * (1-self.ori_net_path_loss_alpha)
+        losses['s_line_loss'] = \
+            self.loss(s_out_line, labels) * (1-self.ori_net_path_loss_alpha)
+        losses['s_loss'] = \
+            self.loss(s_out, labels) * self.ori_net_path_loss_alpha
         losses['t_line_acc'] = accuracy(t_out_line, labels)[0]
         losses['s_line_acc'] = accuracy(s_out_line, labels)[0]
         losses['s_acc'] = accuracy(s_out, labels)[0]
@@ -135,14 +146,26 @@ class Hybrid(nn.Module):
             return self.student_net.state_dict()
         return self.state_dict()
 
+    def init_conn_channels(self, teacher_channels, student_channels):
+        def init_channel(channels, net, index):
+            if channels is not None:
+                return channels
+            out = []
+            for i in index:
+                out.append(get_output_channels(net.sequence_warp[i-1]))
+            return out
+        self.teacher_channels = init_channel(teacher_channels, 
+                                             self.teacher_net, 
+                                             self.teacher_connect_index)
+        self.student_channels = init_channel(student_channels, 
+                                             self.student_net, 
+                                             self.student_connect_index)
+
     def init_connect_module_list(self):
         self.ignore_conn_mask = []
         self.t2s_conv_list = nn.ModuleList()
         self.s2t_conv_list = nn.ModuleList()
-        for t_i, s_i in zip(
-            self.teacher_connect_index, self.student_connect_index):
-            tc = get_output_channels(self.teacher_net.sequence_warp[t_i-1])
-            sc = get_output_channels(self.student_net.sequence_warp[s_i-1])
+        for tc, sc in zip(self.teacher_channels, self.student_channels):
             if tc == sc:
                 self.ignore_conn_mask.append(True)
                 continue

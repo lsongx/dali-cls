@@ -144,3 +144,31 @@ class MaskMobilenetV1LayerOut(MobilenetV1LayerOut):
         x = x.view(-1, 1024)
         x = self.fc(x)
         return x, layer1_feat, layer2_feat, layer3_feat, layer4_feat
+
+
+class Flatten(nn.Module):
+    def forward(self, input):
+        return input.view(input.size(0), -1)
+
+
+@BACKBONES.register_module
+class SequenceMobilenetV1(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.ori_net = MobilenetV1()
+        self.sequence_warp = nn.Sequential(
+            *self.ori_net.layer1.children(),
+            self.ori_net.relu,
+            *self.ori_net.layer2.children(),
+            self.ori_net.relu,
+            *self.ori_net.layer3.children(),
+            self.ori_net.relu,
+            *self.ori_net.layer4.children(),
+            self.ori_net.relu,
+            self.ori_net.avgpool,
+            Flatten(),
+            self.ori_net.fc,
+        )
+    
+    def forward(self, x):
+        return self.sequence_warp(x)

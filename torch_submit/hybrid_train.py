@@ -59,7 +59,9 @@ def parse_args():
         default='~/data/imagenet/val'
     )
     parser.add_argument('--model.teacher_pretrained', type=str, 
-                        default='~/data/models/resnet152-b121ed2d.pth')
+                        default='~/data/models/resnet50-19c8e357.pth')
+                        # default='~/data/models/resnet152-b121ed2d.pth')
+    parser.add_argument('--model.ori_net_path_loss_alpha', type=float, default=0.5)
     parser.add_argument('--data.train_cfg.batch_size', type=int, default=2)
     parser.add_argument('--log_config.interval', type=int, default=1)
     parser.add_argument('--optimizer.lr', type=float, default=0.1)
