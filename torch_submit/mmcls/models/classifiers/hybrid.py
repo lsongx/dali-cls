@@ -40,10 +40,15 @@ def expand_connect_index(connect_index, end_index):
     out_idx.append((last_idx, end_index))
     return out_idx
 
+
 def adjust_bn_tracking(model, mode):
     for module in model.modules():
         if isinstance(module, nn.modules.batchnorm._BatchNorm):
-            module.track_running_stats = mode
+            # module.track_running_stats = mode
+            # --------------- change the track_running_stats will not work
+            # track_running_stats is designed as intrinsic property of the layer
+            # not a dynamic status variable
+            module.train(mode)
 
 
 @CLASSIFIERS.register_module
@@ -84,6 +89,8 @@ class Hybrid(nn.Module):
         self.init_weights(self.student_net, student_pretrained, 
                           student_backbone_init_cfg)
         self.init_connect_module_list()
+        for param in self.teacher_net.parameters():
+            param.requires_grad = False
 
     @staticmethod
     def init_weights(net, pretrained, backbone_init_cfg):
@@ -114,9 +121,7 @@ class Hybrid(nn.Module):
             if idx > 0 and not self.ignore_conn_mask[idx-1]:
                 t_out_line = self.s2t_conv_list[idx-1](t_out_line)
                 s_out_line = self.t2s_conv_list[idx-1](s_out_line)
-            with torch.no_grad():
-                t_out_line = \
-                    self.teacher_net.sequence_warp[t[0]:t[1]](t_out_line)
+            t_out_line = self.teacher_net.sequence_warp[t[0]:t[1]](t_out_line)
             s_out_line = self.student_net.sequence_warp[s[0]:s[1]](s_out_line)
         adjust_bn_tracking(self.student_net, True)
         s_out = self.student_net(imgs)
