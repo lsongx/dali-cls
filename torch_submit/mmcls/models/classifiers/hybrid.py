@@ -117,7 +117,6 @@ class Hybrid(nn.Module):
     def forward_train(self, imgs, labels):
         t_out_line = imgs
         s_out_line = imgs
-        import pdb; pdb.set_trace()
         adjust_bn_tracking(self.student_net, False)
         for idx, (t, s) in enumerate(zip(self.t_idx, self.s_idx)):
             # swith feature map
@@ -128,7 +127,6 @@ class Hybrid(nn.Module):
             t_out_line = self.teacher_net.sequence_warp[t[0]:t[1]](t_out_line)
             s_out_line = self.student_net.sequence_warp[s[0]:s[1]](s_out_line)
         adjust_bn_tracking(self.student_net, True)
-        import pdb; pdb.set_trace()
         s_out = self.student_net(imgs)
         losses = self.get_loss(t_out_line, s_out_line, s_out, labels)
         return losses
