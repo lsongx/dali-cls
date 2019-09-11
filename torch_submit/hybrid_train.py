@@ -65,6 +65,7 @@ def parse_args():
     parser.add_argument('--data.train_cfg.batch_size', type=int, default=2)
     parser.add_argument('--log_config.interval', type=int, default=1)
     parser.add_argument('--optimizer.lr', type=float, default=0.1)
+    parser.add_argument('--total_epochs', type=float, default=120)
 
     parser.add_argument('--use_fp16', type=int, default=0)
 

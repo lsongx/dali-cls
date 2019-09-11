@@ -77,7 +77,7 @@ data = dict(
 # optimizer
 optimizer = dict(type='SGD', lr=0.1, momentum=0.9, weight_decay=1e-4)
 # learning policy
-lr_config = dict(policy='cosine', warmup='linear', warmup_iters=1252, target_lr=1e-4, by_epoch=False)
+lr_config = dict(policy='cosine', warmup='linear', warmup_iters=2400, target_lr=1e-4, by_epoch=False)
 # misc settings
 log_config = dict(
     interval=200,
@@ -86,7 +86,7 @@ log_config = dict(
         dict(type='TensorboardLoggerHook', log_dir='./logs')
     ])
 evaluation = dict(interval=1, switch_loader_epoch=110)
-total_epochs = 240
+total_epochs = 120
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
 work_dir = './data/out'
