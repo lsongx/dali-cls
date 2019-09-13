@@ -31,8 +31,7 @@ data = dict(
         batch_size=64,
         num_threads=16,
         augmentations=[
-            # dict(type='ImageDecoderRandomCrop', device='mixed'),
-            dict(type='ImageDecoder', device='mixed'),
+            dict(type='ImageDecoderRandomCrop', device='mixed'),
             dict(type='Resize', device='gpu', resize_x=224, resize_y=224),
             dict(
                 type='ColorTwist', 
@@ -75,7 +74,7 @@ data = dict(
         num_workers=8,
         dataset_cfg=dict(root="./data/val")))
 # optimizer
-optimizer = dict(type='SGD', lr=0.1, momentum=0.9, weight_decay=1e-4)
+optimizer = dict(type='SGD', lr=0.3, momentum=0.9, weight_decay=4e-5)
 # learning policy
 lr_config = dict(policy='cosine', warmup='linear', warmup_iters=2400, target_lr=1e-4, by_epoch=False)
 # misc settings
