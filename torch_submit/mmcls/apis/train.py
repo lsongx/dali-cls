@@ -7,6 +7,7 @@ import torch
 from mmcv.runner import obj_from_dict, Runner
 from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
 
+import mmcls
 from mmcls.core import DistOptimizerHook, DistEvalTopKHook, Fp16OptimizerHook
 from mmcls.datasets import build_dataloader
 
@@ -170,6 +171,9 @@ def _dist_train(model, cfg, validate=False, logger=None):
         eval_cfg['logger'] = logger
         runner.register_hook(
             DistEvalTopKHook(val_loader_fast, val_loader_accurate, **eval_cfg))
+    for param_adjust_hook in cfg.get('param_adjust_hooks', []):
+        runner.register_hook(
+            obj_from_dict(param_adjust_hook, mmcls.core.evaluation))
 
     if cfg.resume_from:
         runner.resume(cfg.resume_from)

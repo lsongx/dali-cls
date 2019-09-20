@@ -117,16 +117,22 @@ class Hybrid(nn.Module):
     def forward_train(self, imgs, labels):
         t_out_line = imgs
         s_out_line = imgs
-        adjust_bn_tracking(self.student_net, False)
-        for idx, (t, s) in enumerate(zip(self.t_idx, self.s_idx)):
-            # swith feature map
-            t_out_line, s_out_line = s_out_line, t_out_line
-            if idx > 0 and not self.ignore_conn_mask[idx-1]:
-                t_out_line = self.s2t_conv_list[idx-1](t_out_line)
-                s_out_line = self.t2s_conv_list[idx-1](s_out_line)
-            t_out_line = self.teacher_net.sequence_warp[t[0]:t[1]](t_out_line)
-            s_out_line = self.student_net.sequence_warp[s[0]:s[1]](s_out_line)
-        adjust_bn_tracking(self.student_net, True)
+        if self.ori_net_path_loss_alpha > 0:
+            adjust_bn_tracking(self.student_net, False)
+            for idx, (t, s) in enumerate(zip(self.t_idx, self.s_idx)):
+                # swith feature map
+                t_out_line, s_out_line = s_out_line, t_out_line
+                if idx > 0 and not self.ignore_conn_mask[idx-1]:
+                    t_out_line = self.s2t_conv_list[idx-1](t_out_line)
+                    s_out_line = self.t2s_conv_list[idx-1](s_out_line)
+                t_out_line = \
+                    self.teacher_net.sequence_warp[t[0]:t[1]](t_out_line)
+                s_out_line = \
+                    self.student_net.sequence_warp[s[0]:s[1]](s_out_line)
+            adjust_bn_tracking(self.student_net, True)
+        else:
+            t_out_line = None
+            s_out_line = None
         s_out = self.student_net(imgs)
         losses = self.get_loss(t_out_line, s_out_line, s_out, labels)
         return losses
@@ -138,10 +144,11 @@ class Hybrid(nn.Module):
     @force_fp32(apply_to=('t_out_line', 's_out_line', 's_out',))
     def get_loss(self, t_out_line, s_out_line, s_out, labels):
         losses = dict()
-        losses['t_line_loss'] = \
-            self.loss(t_out_line, labels) * (1-self.ori_net_path_loss_alpha)
-        losses['s_line_loss'] = \
-            self.loss(s_out_line, labels) * (1-self.ori_net_path_loss_alpha)
+        if self.ori_net_path_loss_alpha > 0:
+            losses['t_line_loss'] = \
+                self.loss(t_out_line, labels)*(1-self.ori_net_path_loss_alpha)
+            losses['s_line_loss'] = \
+                self.loss(s_out_line, labels)*(1-self.ori_net_path_loss_alpha)
         losses['s_loss'] = \
             self.loss(s_out, labels) * self.ori_net_path_loss_alpha
         losses['t_line_acc'] = accuracy(t_out_line, labels)[0]
