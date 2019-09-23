@@ -89,6 +89,7 @@ param_adjust_hooks = [
     dict(
         type='ModelParamAdjustHook',
         param_name_adjust_epoch_value = [
+            ('ori_net_path_loss_alpha', 0, 0.8),
             ('ori_net_path_loss_alpha', 40, 0.3),
             ('ori_net_path_loss_alpha', 60, 0.1),
             ('ori_net_path_loss_alpha', 80, 0)],)]

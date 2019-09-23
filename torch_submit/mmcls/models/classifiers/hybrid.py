@@ -149,10 +149,10 @@ class Hybrid(nn.Module):
                 self.loss(t_out_line, labels)*(1-self.ori_net_path_loss_alpha)
             losses['s_line_loss'] = \
                 self.loss(s_out_line, labels)*(1-self.ori_net_path_loss_alpha)
+            losses['t_line_acc'] = accuracy(t_out_line, labels)[0]
+            losses['s_line_acc'] = accuracy(s_out_line, labels)[0]
         losses['s_loss'] = \
             self.loss(s_out, labels) * self.ori_net_path_loss_alpha
-        losses['t_line_acc'] = accuracy(t_out_line, labels)[0]
-        losses['s_line_acc'] = accuracy(s_out_line, labels)[0]
         losses['s_acc'] = accuracy(s_out, labels)[0]
         return losses
 

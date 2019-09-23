@@ -11,9 +11,9 @@ class ModelParamAdjustHook(Hook):
         self.param_name_adjust_epoch_value = param_name_adjust_epoch_value
         self.logger = logger
 
-    def after_train_epoch(self, runner):
+    def before_train_epoch(self, runner):
         for name, adjust_epoch, value in self.param_name_adjust_epoch_value:
-            if runner.epoch > adjust_epoch:
-                setattr(runner.model, name, value)
+            if (runner.epoch+1) > adjust_epoch:
+                setattr(runner.model.module, name, value)
                 if self.logger:
                     self.logger.info(f'{name} is set to {value}')
