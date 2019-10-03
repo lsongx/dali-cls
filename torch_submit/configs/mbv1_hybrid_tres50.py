@@ -89,10 +89,10 @@ param_adjust_hooks = [
     dict(
         type='ModelParamAdjustHook',
         param_name_adjust_epoch_value = [
-            ('ori_net_path_loss_alpha', 0, 0.8),
-            ('ori_net_path_loss_alpha', 40, 0.3),
-            ('ori_net_path_loss_alpha', 60, 0.1),
-            ('ori_net_path_loss_alpha', 80, 0)],)]
+            ('ori_net_path_loss_alpha', 0, 0.2),
+            ('ori_net_path_loss_alpha', 40, 0.6),
+            ('ori_net_path_loss_alpha', 60, 0.9),
+            ('ori_net_path_loss_alpha', 80, 1)],)]
 total_epochs = 120
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
