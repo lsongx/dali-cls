@@ -25,8 +25,8 @@ def build_backbone(cfg):
 
 
 def build_loss(cfg):
-    implement_source = cfg.pop('implement', 'torchvision')
-    if implement_source == 'torchvision':
+    implement_source = cfg.pop('implement', 'torch')
+    if implement_source == 'torch':
         model = getattr(mmcls.models.loss, cfg.pop('type'))
         return model(**cfg)
     else:

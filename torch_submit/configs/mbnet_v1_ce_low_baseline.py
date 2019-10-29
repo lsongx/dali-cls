@@ -7,9 +7,7 @@ model = dict(
     backbone=dict(
         type='MobilenetV1',
         implement='local'),
-    loss=dict(
-        type='CrossEntropyLoss',
-        implement='local'))
+    loss=dict(type='CrossEntropyLoss'))
 # dataset settings
 data = dict(
     train_cfg=dict(
