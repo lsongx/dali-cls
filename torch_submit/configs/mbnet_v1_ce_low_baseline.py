@@ -53,7 +53,7 @@ data = dict(
 # optimizer
 optimizer = dict(type='SGD', lr=0.1, momentum=0.9, weight_decay=4e-5)
 # learning policy
-lr_config = dict(policy='cosine', target_lr=1e-4, by_epoch=False)
+lr_config = dict(policy='step', step=[30, 60, 90])
 # misc settings
 log_config = dict(
     interval=200,
