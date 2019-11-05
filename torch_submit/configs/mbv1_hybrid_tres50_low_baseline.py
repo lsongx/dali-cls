@@ -11,10 +11,7 @@ model = dict(
     student_net=dict(
         type='SequenceMobilenetV1',
         implement='local'),
-    loss=dict(
-        type='CrossEntropySmoothLoss',
-        implement='local',
-        smoothing=0.1),
+    loss=dict(type='CrossEntropyLoss'),
     # teacher_connect_index=(7, 15, 51, 54),
     # student_connect_index=(7, 11, 17, 20),
     teacher_connect_index=(11, 20),
@@ -74,7 +71,7 @@ data = dict(
         num_workers=8,
         dataset_cfg=dict(root="./data/val")))
 # optimizer
-optimizer = dict(type='SGD', lr=0.1, momentum=0.9, weight_decay=4e-5)
+optimizer = dict(type='SGD', lr=0.111111, momentum=0.9, weight_decay=4e-5)
 # learning policy
 lr_config = dict(policy='step', step=[30, 60, 90])
 # misc settings
@@ -89,10 +86,8 @@ param_adjust_hooks = [
     dict(
         type='ModelParamAdjustHook',
         param_name_adjust_epoch_value = [
-            ('ori_net_path_loss_alpha', 0, 0.2),
-            ('ori_net_path_loss_alpha', 15, 0.6),
-            ('ori_net_path_loss_alpha', 30, 0.9),
-            ('ori_net_path_loss_alpha', 60, 1)],)]
+            ('ori_net_path_loss_alpha', 0, 0.5),
+            ('ori_net_path_loss_alpha', 15, 0.9)],)]
 total_epochs = 100
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
