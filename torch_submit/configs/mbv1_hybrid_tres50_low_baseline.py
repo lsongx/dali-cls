@@ -71,7 +71,7 @@ data = dict(
         num_workers=8,
         dataset_cfg=dict(root="./data/val")))
 # optimizer
-optimizer = dict(type='SGD', lr=0.111111, momentum=0.9, weight_decay=4e-5)
+optimizer = dict(type='SGD', lr=0.1, momentum=0.9, weight_decay=4e-5)
 # learning policy
 lr_config = dict(policy='step', step=[30, 60, 90])
 # misc settings
