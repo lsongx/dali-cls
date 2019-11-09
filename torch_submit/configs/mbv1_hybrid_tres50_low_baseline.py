@@ -18,8 +18,7 @@ model = dict(
     student_connect_index=(8, 18),
     student_channels=(256, 1024),
     teacher_pretrained='./data/resnet50-19c8e357.pth',
-    student_backbone_init_cfg='dw_conv',
-    ori_net_path_loss_alpha=0.5)
+    ori_net_path_loss_alpha=0.9)
 # dataset settings
 data = dict(
     train_cfg=dict(
@@ -86,8 +85,7 @@ param_adjust_hooks = [
     dict(
         type='ModelParamAdjustHook',
         param_name_adjust_epoch_value = [
-            ('ori_net_path_loss_alpha', 0, 0.5),
-            ('ori_net_path_loss_alpha', 15, 0.9)],)]
+            ('ori_net_path_loss_alpha', 0, 0.9),)]
 total_epochs = 100
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
