@@ -81,11 +81,11 @@ log_config = dict(
         dict(type='TensorboardLoggerHook', log_dir='./logs')
     ])
 evaluation = dict(interval=1, switch_loader_epoch=110)
-param_adjust_hooks = [
-    dict(
-        type='ModelParamAdjustHook',
-        param_name_adjust_epoch_value = [
-            ('ori_net_path_loss_alpha', 0, 0.9),)]
+# param_adjust_hooks = [
+#     dict(
+#         type='ModelParamAdjustHook',
+#         param_name_adjust_epoch_value = [
+#             ('ori_net_path_loss_alpha', 0, 0.9)],)]
 total_epochs = 100
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
