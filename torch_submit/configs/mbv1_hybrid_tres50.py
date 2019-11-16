@@ -22,7 +22,7 @@ model = dict(
     student_channels=(256, 1024),
     teacher_pretrained='./data/resnet50-19c8e357.pth',
     student_backbone_init_cfg='dw_conv',
-    ori_net_path_loss_alpha=0.5)
+    ori_net_path_loss_alpha=0.9)
 # dataset settings
 data = dict(
     train_cfg=dict(
@@ -85,14 +85,14 @@ log_config = dict(
         dict(type='TensorboardLoggerHook', log_dir='./logs')
     ])
 evaluation = dict(interval=1, switch_loader_epoch=110)
-param_adjust_hooks = [
-    dict(
-        type='ModelParamAdjustHook',
-        param_name_adjust_epoch_value = [
-            ('ori_net_path_loss_alpha', 0, 0.2),
-            ('ori_net_path_loss_alpha', 40, 0.6),
-            ('ori_net_path_loss_alpha', 60, 0.9),
-            ('ori_net_path_loss_alpha', 80, 1)],)]
+# param_adjust_hooks = [
+#     dict(
+#         type='ModelParamAdjustHook',
+#         param_name_adjust_epoch_value = [
+#             ('ori_net_path_loss_alpha', 0, 0.2),
+#             ('ori_net_path_loss_alpha', 40, 0.6),
+#             ('ori_net_path_loss_alpha', 60, 0.9),
+#             ('ori_net_path_loss_alpha', 80, 1)],)]
 total_epochs = 120
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
