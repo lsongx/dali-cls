@@ -312,8 +312,8 @@ def main(args):
         os.system("chmod 700 py_submit.sh")
         os.system(f"chmod 700 ./{config_job['FILE_FOLDER']}/py_job.sh")
         if args.run_submit:
-            # os.system("./py_submit.sh")
-            submit_and_update_local_id_db("./py_submit.sh", server)
+            os.system("./py_submit.sh")
+            # submit_and_update_local_id_db("./py_submit.sh", server)
             print('-'*70)
 
 

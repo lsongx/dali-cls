@@ -33,14 +33,14 @@ data = dict(
         augmentations=[
             dict(type='ImageDecoderRandomCrop', device='mixed'),
             dict(type='Resize', device='gpu', resize_x=224, resize_y=224),
-            dict(
-                type='ColorTwist', 
-                device='gpu',
-                run_params=[
-                    dict(type='Uniform', range=[0.6, 1.4], key='brightness'),
-                    dict(type='Uniform', range=[0.6, 1.4], key='contrast'),
-                    dict(type='Uniform', range=[0.6, 1.4], key='saturation'),
-                ]),
+            # dict(
+            #     type='ColorTwist', 
+            #     device='gpu',
+            #     run_params=[
+            #         dict(type='Uniform', range=[0.6, 1.4], key='brightness'),
+            #         dict(type='Uniform', range=[0.6, 1.4], key='contrast'),
+            #         dict(type='Uniform', range=[0.6, 1.4], key='saturation'),
+            #     ]),
             dict(
                 type='CropMirrorNormalize', 
                 device='gpu', 
@@ -84,7 +84,7 @@ log_config = dict(
         dict(type='TextLoggerHook'),
         dict(type='TensorboardLoggerHook', log_dir='./logs')
     ])
-evaluation = dict(interval=1, switch_loader_epoch=110)
+evaluation = dict(interval=1, switch_loader_epoch=250)
 # param_adjust_hooks = [
 #     dict(
 #         type='ModelParamAdjustHook',
