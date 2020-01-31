@@ -11,17 +11,18 @@ model = dict(
     student_net=dict(
         type='SequenceMobilenetV1',
         implement='local'),
-    loss=dict(
-        type='CrossEntropySmoothLoss',
-        implement='local',
-        smoothing=0.1),
+    # loss=dict(
+    #     type='CrossEntropySmoothLoss',
+    #     implement='local',
+    #     smoothing=0.1), # high-baseline
+    loss=dict(type='CrossEntropyLoss'),
     # teacher_connect_index=(7, 15, 51, 54),
     # student_connect_index=(7, 11, 17, 20),
     teacher_connect_index=(11, 20),
     student_connect_index=(8, 18),
     student_channels=(256, 1024),
     teacher_pretrained='./data/resnet50-19c8e357.pth',
-    student_backbone_init_cfg='dw_conv',
+    # student_backbone_init_cfg='dw_conv', # high-baseline
     ori_net_path_loss_alpha=0.9)
 # dataset settings
 data = dict(
