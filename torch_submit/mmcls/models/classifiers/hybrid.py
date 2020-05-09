@@ -117,7 +117,7 @@ class Hybrid(nn.Module):
     def forward_train(self, imgs, labels):
         t_out_line = imgs
         s_out_line = imgs
-        if self.ori_net_path_loss_alpha > 0:
+        if self.ori_net_path_loss_alpha < 1:
             adjust_bn_tracking(self.student_net, False)
             for idx, (t, s) in enumerate(zip(self.t_idx, self.s_idx)):
                 # swith feature map
@@ -144,15 +144,16 @@ class Hybrid(nn.Module):
     @force_fp32(apply_to=('t_out_line', 's_out_line', 's_out',))
     def get_loss(self, t_out_line, s_out_line, s_out, labels):
         losses = dict()
-        if self.ori_net_path_loss_alpha > 0:
+        if self.ori_net_path_loss_alpha < 1:
             losses['t_line_loss'] = \
                 self.loss(t_out_line, labels)*(1-self.ori_net_path_loss_alpha)
             losses['s_line_loss'] = \
                 self.loss(s_out_line, labels)*(1-self.ori_net_path_loss_alpha)
             losses['t_line_acc'] = accuracy(t_out_line, labels)[0]
             losses['s_line_acc'] = accuracy(s_out_line, labels)[0]
-        losses['s_loss'] = \
-            self.loss(s_out, labels) * self.ori_net_path_loss_alpha
+        # losses['s_loss'] = \
+        #     self.loss(s_out, labels) * self.ori_net_path_loss_alpha
+        losses['s_loss'] = self.loss(s_out, labels)
         losses['s_acc'] = accuracy(s_out, labels)[0]
         return losses
 

@@ -11,10 +11,6 @@ model = dict(
     student_net=dict(
         type='SequenceMobilenetV1',
         implement='local'),
-    # loss=dict(
-    #     type='CrossEntropySmoothLoss',
-    #     implement='local',
-    #     smoothing=0.1), # high-baseline
     loss=dict(type='CrossEntropyLoss'),
     # teacher_connect_index=(7, 15, 51, 54),
     # student_connect_index=(7, 11, 17, 20),
@@ -22,7 +18,6 @@ model = dict(
     student_connect_index=(8, 18),
     student_channels=(256, 1024),
     teacher_pretrained='./data/resnet50-19c8e357.pth',
-    # student_backbone_init_cfg='dw_conv', # high-baseline
     ori_net_path_loss_alpha=0.9)
 # dataset settings
 data = dict(
@@ -34,14 +29,14 @@ data = dict(
         augmentations=[
             dict(type='ImageDecoderRandomCrop', device='mixed'),
             dict(type='Resize', device='gpu', resize_x=224, resize_y=224),
-            # dict(
-            #     type='ColorTwist', 
-            #     device='gpu',
-            #     run_params=[
-            #         dict(type='Uniform', range=[0.6, 1.4], key='brightness'),
-            #         dict(type='Uniform', range=[0.6, 1.4], key='contrast'),
-            #         dict(type='Uniform', range=[0.6, 1.4], key='saturation'),
-            #     ]),
+            dict(
+                type='ColorTwist', 
+                device='gpu',
+                run_params=[
+                    dict(type='Uniform', range=[0.6, 1.4], key='brightness'),
+                    dict(type='Uniform', range=[0.6, 1.4], key='contrast'),
+                    dict(type='Uniform', range=[0.6, 1.4], key='saturation'),
+                ]),
             dict(
                 type='CropMirrorNormalize', 
                 device='gpu', 
@@ -77,7 +72,7 @@ data = dict(
 # optimizer
 optimizer = dict(type='SGD', lr=0.1, momentum=0.9, weight_decay=4e-5)
 # learning policy
-lr_config = dict(policy='cosine', warmup='linear', warmup_iters=5000, target_lr=1e-4, by_epoch=False)
+lr_config = dict(policy='step', step=[30, 60, 90])
 # misc settings
 log_config = dict(
     interval=200,
@@ -85,16 +80,13 @@ log_config = dict(
         dict(type='TextLoggerHook'),
         dict(type='TensorboardLoggerHook', log_dir='./logs')
     ])
-evaluation = dict(interval=1, switch_loader_epoch=250)
+evaluation = dict(interval=1, switch_loader_epoch=110)
 # param_adjust_hooks = [
 #     dict(
 #         type='ModelParamAdjustHook',
 #         param_name_adjust_epoch_value = [
-#             ('ori_net_path_loss_alpha', 0, 0.2),
-#             ('ori_net_path_loss_alpha', 40, 0.6),
-#             ('ori_net_path_loss_alpha', 60, 0.9),
-#             ('ori_net_path_loss_alpha', 80, 1)],)]
-total_epochs = 120
+#             ('ori_net_path_loss_alpha', 0, 0.9)],)]
+total_epochs = 100
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
 work_dir = './data/out'
