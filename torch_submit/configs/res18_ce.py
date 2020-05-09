@@ -5,25 +5,26 @@ fp16 = dict(loss_scale=512.)
 model = dict(
     type='BaseClassifier',
     backbone=dict(
-        type='MobilenetV1',
-        implement='local'),
+        type='resnet18',
+        implement='torchvision'),
     loss=dict(
         type='CrossEntropySmoothLoss',
         implement='local',
         smoothing=0.1),
-    backbone_init_cfg='dw_conv')
+    backbone_init_cfg='dw_conv',
+    pretrained=None)
 # dataset settings
 data = dict(
     train_cfg=dict(
         type='train',
         engine='dali',
-        batch_size=128,
+        batch_size=1024,
         num_threads=16,
         augmentations=[
             dict(type='ImageDecoderRandomCrop', device='mixed'),
             dict(type='Resize', device='gpu', resize_x=224, resize_y=224),
             dict(
-                type='ColorTwist',
+                type='ColorTwist', 
                 device='gpu',
                 run_params=[
                     dict(type='Uniform', range=[0.6, 1.4], key='brightness'),
@@ -31,9 +32,9 @@ data = dict(
                     dict(type='Uniform', range=[0.6, 1.4], key='saturation'),
                 ]),
             dict(
-                type='CropMirrorNormalize',
-                device='gpu',
-                crop=224,
+                type='CropMirrorNormalize', 
+                device='gpu', 
+                crop=224, 
                 mean=[0.485 * 255, 0.456 * 255, 0.406 * 255],
                 std=[0.229 * 255, 0.224 * 255, 0.225 * 255],
                 run_params=[
@@ -66,6 +67,7 @@ data = dict(
 optimizer = dict(type='SGD', lr=0.5, momentum=0.9, weight_decay=4e-5)
 # learning policy
 lr_config = dict(policy='cosine', warmup='linear', warmup_iters=1252, target_lr=1e-4, by_epoch=False)
+# lr_config = dict(policy='cosine', target_lr=1e-4, by_epoch=False)
 # misc settings
 log_config = dict(
     interval=200,

@@ -10,68 +10,45 @@ import subprocess
 
 import local_id_db_utils as db
 
-# mycluster1: IDC
-# mycluster2: IDC-small
-# mycluster3: ksyun-titanv
-# mycluster4: ksyun-2080Ti
+
 CLUSTER_STR = '''
 clusters:
-    mycluster1:
+    idc:
         appid: luagVilANE
         appkey: rSICHdzJfPCLneRZGizT
         endpoint: idc-train
         hdfs: hdfs://hobot-bigdata/
-    mycluster2:
+    idcsmall:
         appid: rflpcUpMEJ
         appkey: rvOHShPbASQCReoMoqJC
         endpoint: idc-train
         hdfs: hdfs://hobot-bigdata/
-    mycluster3:
+    idc2080ti:
+        appid: HUVZDKBFaV
+        appkey: OJRsnhqRTBgexmuQwfOe
+        endpoint: idc-train
+        hdfs: hdfs://hobot-bigdata/
+    ksyun:
         appid: YaeVpSrTrg
         appkey: ZrCKLyYVgjKvPBvqjUhh
         endpoint: ksyun-train.hobot.cc
         hdfs: hdfs://hobot-bigdata/
-    mycluster4:
-        appid: nJhrGIeBrR
-        appkey: mwhtUgdmvcTzynLOgnOQ
-        endpoint: ksyun-train.hobot.cc
-        hdfs: hdfs://hobot-bigdata/
-    mycluster5:
-        appid: sGecMtsNgP
-        appkey: wCKGzFQWpETZaCRLOBjd
-        endpoint: aliyun-train.hobot.cc
-        hdfs: hdfs://hobot-bigdata/
-    mycluster6:
-        appid: UvussIDaRg
-        appkey: pGxAxwWrBwRNxfUybhGA
-        endpoint: aliyun-train.hobot.cc
-        hdfs: hdfs://hobot-bigdata/
 '''
-
-CLUSTER_ID_TO_STR = {
-    '1': '1',
-    '2': '1',
-    '2small': '2',
-    '3': '3',
-    '32080ti': '4',
-    '4': '5',
-    '4small': '6',
-}
 
 CLUSTER_TO_J2FILE = {
     '1': {
         'submit_scripts': ('py_submit.sh.qsub.j2',),
         'run_scripts': ('py_job.sh.qsub.j2',),
     },
-    '2': {
+    'idc': {
         'submit_scripts': ('py_submit.sh.idc.j2', 'py_job.yaml.j2'),
         'run_scripts': ('py_job.sh.idc.j2',),
     },
-    '3': {
+    'ksyun': {
         'submit_scripts': ('py_submit.sh.idc.j2', 'py_job.yaml.j2'),
         'run_scripts': ('py_job.sh.idc.j2',),
     },
-    '4': {
+    'aliyun': {
         'submit_scripts': ('py_submit.sh.idc.j2', 'py_job.yaml.j2'),
         'run_scripts': ('py_job.sh.idc.j2',),
     },
@@ -93,13 +70,13 @@ BASE_J2FILE_REQIRED_VARS = {
 J2FILE_REQIRED_VARS = {
     '1': {
     },
-    '2': {
+    'idc': {
         'worker': 'WORKER',
     },
-    '3': {
+    'ksyun': {
         'worker': 'WORKER',
     },
-    '4': {
+    'aliyun': {
         'worker': 'WORKER',
     },
 }
@@ -110,13 +87,13 @@ CLUSTER_SPECIFIC_PARA = {
     '1': {
         'tensorboard_log_dir': './logs/'
     },
-    '2': {
+    'idc': {
         # 'tensorboard_log_dir': '/job_tboard/'
     },
-    '3': {
+    'ksyun': {
         # 'tensorboard_log_dir': '/job_tboard/'
     },
-    '4': {
+    'aliyun': {
         # 'tensorboard_log_dir': '/job_tboard/'
     },
 }
@@ -126,11 +103,11 @@ STR_REPLACE = {
         lambda x: x.replace('hobot-bigdata', 'hobot-bigdata-mos'),
         lambda x: x.replace('conda_lib9_torch10', 'conda_lib8_torch10'),
     ],
-    '2': [],
-    '3': [
+    'idc': [],
+    'ksyun': [
         lambda x: x.replace('hobot-bigdata', 'ksbigdata'),
     ],
-    '4': [
+    'aliyun': [
         lambda x: x.replace('hobot-bigdata', 'hobot-bigdata-aliyun'),
     ],
 }
@@ -239,11 +216,11 @@ def main(args):
     config_job['REAP_RUN'] = list(range(int(config_job['REAP_RUN'])))
 
     # write cluster config file
-    server = CLUSTER_ID_TO_STR[cluster_id+cluster_id_extra]
+    server = cluster_id+cluster_id_extra
     with open('./gpucluster.yaml', 'w') as f:
         f.write(
             CLUSTER_STR +
-            f'\ncurrent-cluster: mycluster{server}'
+            f'\ncurrent-cluster: {server}'
         )
 
     # multiple submit
@@ -268,7 +245,13 @@ def main(args):
         # get job scripts
         job_script = config_job_para['SCRIPT_PATH']
         for k, v in src_para.items():
-            suffix = ' -' if len(k) == 1 else ' --'
+            if len(k) == 1:
+                suffix = ' -'
+            elif k[:2] == '__':
+                suffix = ' '
+                k = k.replace('__', '')
+            else:
+                suffix = ' --'
             job_script += f"{suffix}{k} {v.replace('PASS', '')}" if len(
                 k) > 0 else ''
         config_job['JOB_SCRIPT'] = job_script
@@ -312,8 +295,8 @@ def main(args):
         os.system("chmod 700 py_submit.sh")
         os.system(f"chmod 700 ./{config_job['FILE_FOLDER']}/py_job.sh")
         if args.run_submit:
-            # os.system("./py_submit.sh")
-            submit_and_update_local_id_db("./py_submit.sh", server)
+            os.system("./py_submit.sh")
+            # submit_and_update_local_id_db("./py_submit.sh", server)
             print('-'*70)
 
 

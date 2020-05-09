@@ -58,8 +58,8 @@ def parse_args():
         '--data.val_cfg_accurate.dataset_cfg.root', type=str,
         default='~/data/imagenet/val'
     )
-    parser.add_argument('--model.pretrained', type=str, 
-                        default='~/data/models/resnet50-19c8e357.pth')
+    # parser.add_argument('--model.pretrained', type=str, 
+    #                     default='~/data/models/resnet50-19c8e357.pth')
     parser.add_argument('--data.train_cfg.batch_size', type=int, default=2)
     parser.add_argument('--log_config.interval', type=int, default=1)
     parser.add_argument('--optimizer.lr', type=float, default=0.1)
