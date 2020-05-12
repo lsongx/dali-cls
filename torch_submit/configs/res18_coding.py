@@ -76,7 +76,8 @@ log_config = dict(
         dict(type='TextLoggerHook'),
         dict(type='TensorboardLoggerHook', log_dir='./logs')
     ])
-evaluation = dict(interval=1, switch_loader_epoch=220)
+# evaluation = dict(interval=1, switch_loader_epoch=220)
+evaluation = dict(interval=1, switch_loader_epoch=239)
 total_epochs = 241
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
