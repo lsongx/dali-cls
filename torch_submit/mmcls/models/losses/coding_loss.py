@@ -24,14 +24,15 @@ class CodingLoss(torch.nn.Module):
         n_classes = inputs.size(1)
         target = torch.unsqueeze(labels, 1)
         y = torch.zeros_like(inputs)
-        y.scatter_(1, target, 1)
+        y.scatter_(1, target.long(), 1)
+        y_bool = y == 1
 
         distance = self.get_hamming_distance(inputs[:, None], code_book[None])
         min_dist = distance.min().detach()
         distance = distance - min_dist
         predicted = distance.argmin(dim=1)
-        label_distance = distance[y.bool()][:]
-        non_label_distance = -distance[~y.bool()].view([y.shape[0], -1])
+        label_distance = distance[y_bool][:]
+        non_label_distance = -distance[~y_bool].view([y.shape[0], -1])
         loss = 1+ non_label_distance.exp().sum(dim=1) / (-label_distance).exp()
 
         return loss.log().mean()

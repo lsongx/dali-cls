@@ -75,11 +75,11 @@ class CodingClassifier(nn.Module):
             outputs[:,None], self.code_book[None])
         return outputs
 
-    @force_fp32(apply_to=('outputs', ))
+    @force_fp32(apply_to=('outputs', 'labels', 'code_book'))
     def get_loss(self, outputs, labels, code_book):
         losses = dict()
-        losses['loss'] = self.loss(outputs, labels, self.code_book)
-        losses['acc'] = self.accuracy(outputs, labels)
+        losses['loss'] = self.loss(outputs, labels, code_book)
+        losses['acc'] = self.accuracy(outputs, labels, code_book)
         return losses
 
     def get_model(self):
@@ -95,7 +95,8 @@ class CodingClassifier(nn.Module):
         """
         return -(output*code + (1-output)*(1-code)).sum(dim=2) / code.shape[1]
 
-    def accuracy(self, outputs, labels):
-        outputs = self.get_hamming_distance(
-            outputs[:,None], self.code_book[None])
+    # fp32 for compatibility
+    @force_fp32(apply_to=('outputs', 'labels', 'code_book'))
+    def accuracy(self, outputs, labels, code_book):
+        outputs = self.get_hamming_distance(outputs[:,None], code_book[None])
         return accuracy(-outputs, labels)
