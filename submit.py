@@ -14,8 +14,8 @@ import local_id_db_utils as db
 CLUSTER_STR = '''
 clusters:
     idc:
-        appid: luagVilANE
-        appkey: rSICHdzJfPCLneRZGizT
+        appid: YzbVqHmyte
+        appkey: LRtqPlkPhlKdPaSURFVA
         endpoint: idc-train
         hdfs: hdfs://hobot-bigdata/
     idcsmall:

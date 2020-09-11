@@ -77,8 +77,7 @@ class DALIValPipe(Pipeline):
                  batch_size, 
                  num_threads, 
                  reader_cfg,
-                 crop=224, 
-                 size=256):
+                 augmentations):
         super(DALIValPipe, self).__init__(batch_size, num_threads, 
                                           local_rank, seed=12 + local_rank)
         reader = getattr(ops, reader_cfg.pop('type'))
@@ -86,21 +85,23 @@ class DALIValPipe(Pipeline):
                             num_shards=world_size, 
                             random_shuffle=False, 
                             **reader_cfg)
-        self.decode = ops.ImageDecoder(device="mixed", output_type=types.RGB)
-        # self.decode = ops.nvJPEGDecoder(device="mixed", output_type=types.RGB)
-        # self.res = ops.Resize(device="gpu", resize_shorter=size,
-        #                       interp_type=types.INTERP_LINEAR)
-        self.cmnp = ops.CropMirrorNormalize(
-            device="gpu", crop=crop,
-            mean=[0.485 * 255, 0.456 * 255, 0.406 * 255],
-            std=[0.229 * 255, 0.224 * 255, 0.225 * 255])
+        self.aug_list, self.calling_method_list, \
+        self.input_param_dict_key_list, self.whether_to_call_list =\
+            _init_augmentations(augmentations)
 
     def define_graph(self):
         self.jpegs, self.labels = self.input(name="Reader")
-        images = self.decode(self.jpegs)
-        # images = self.res(images)
-        output = self.cmnp(images.gpu())
-        return [output, self.labels]
+        images, labels = self.input(name="Reader")
+        for aug, call, in_dict_key, wtc in zip(
+            self.aug_list, self.calling_method_list,
+            self.input_param_dict_key_list, self.whether_to_call_list):
+            if wtc:
+                tmp_value = call()
+                in_dict = {in_dict_key: tmp_value}
+                images = aug(images, **in_dict)
+            else:
+                images = aug(images)
+        return [images, labels]
 
 
 class WarpDALIClassificationIterator(DALIClassificationIterator):
@@ -116,7 +117,7 @@ def build_dali_loader(cfg, local_rank, world_size):
         pipe.build()
         size = int(pipe.epoch_size("Reader") / world_size)
         loader = WarpDALIClassificationIterator(
-            pipe, size=size, auto_reset=True)
+            pipe, size=size, fill_last_batch=False, auto_reset=True)
         loader._epoch_length = math.ceil(loader._size / cfg.get('batch_size'))
         return loader
     elif cfg_type == 'val':
@@ -125,7 +126,7 @@ def build_dali_loader(cfg, local_rank, world_size):
         pipe.build()
         size = int(pipe.epoch_size("Reader") / world_size)
         loader = WarpDALIClassificationIterator(
-            pipe, size=size, auto_reset=True)
+            pipe, size=size, fill_last_batch=False, auto_reset=True)
         loader._epoch_length = math.ceil(loader._size / cfg.get('batch_size'))
         return loader
     else:
