@@ -7,7 +7,7 @@ from torch.utils.data import DataLoader
 from torchvision.datasets import ImageFolder
 import torchvision.transforms as transforms
 
-from .sampler import GroupSampler, DistributedGroupSampler, DistributedSampler
+from .sampler import DistributedSampler
 
 
 def build_torchvision_loader(cfg, local_rank, world_size):
@@ -25,7 +25,7 @@ def build_torchvision_loader(cfg, local_rank, world_size):
         dataset = ImageFolder(**cfg.pop('dataset_cfg'),
                               transform=val_transform)
         sampler = DistributedSampler(
-            dataset, world_size, local_rank, shuffle=False)
+            dataset, world_size, local_rank, shuffle=False, round_up=False)
         loader = DataLoader(
             dataset,
             sampler=sampler,

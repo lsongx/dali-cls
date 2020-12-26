@@ -20,6 +20,12 @@ def build_backbone(cfg):
     if implement_source == 'torchvision':
         model = getattr(mmcls.models.backbones, cfg.pop('type'))
         return model(**cfg)
+    elif implement_source == 'timm':
+        import timm
+        model = timm.create_model(
+            cfg.type.lower(), pretrained=False, 
+            checkpoint_path=cfg.pop('checkpoint_path', ''))
+        return model
     else:
         return build(cfg, BACKBONES)
 

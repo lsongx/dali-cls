@@ -1,12 +1,12 @@
 import logging
 from collections import OrderedDict
 
-import torch
 import mmcv
 from mmcv.runner import obj_from_dict
 from mmcls.utils.checkpoint import load_checkpoint
 
 import numpy as np
+import torch
 import torch.nn as nn
 import torch.distributed as dist
 
@@ -18,30 +18,44 @@ from .. import builder
 from ..registry import CLASSIFIERS
 
 
-
 @CLASSIFIERS.register_module
-class BaseClassifier(nn.Module):
+class Distill(nn.Module):
     """Base class for Classifiers"""
 
     def __init__(self, 
-                 backbone, 
-                 loss, 
+                 teacher_nets, 
+                 student_net,
+                 ce_loss, 
+                 distill_loss, 
                  pretrained=None, 
-                 backbone_init_cfg=None):
-        super(BaseClassifier, self).__init__()
+                 backbone_init_cfg=None,
+                 distill_loss_alpha=0.5,
+                 save_only_student=True):
+        """
+        """
+        super(Distill, self).__init__()
         self.fp16_enabled = False
-        self.backbone = builder.build_backbone(backbone)
-        self.loss = builder.build_loss(loss)
-        self.init_weights(pretrained, backbone_init_cfg)
+        self.teacher_nets = nn.ModuleList(
+            [builder.build_backbone(teacher_net) for teacher_net in teacher_nets]) 
+        self.student_net = builder.build_backbone(student_net)
+        self.ce_loss = builder.build_loss(ce_loss)
+        self.distill_loss = builder.build_loss(distill_loss)
+        self.distill_loss_alpha = distill_loss_alpha
+        self.save_only_student = save_only_student
+        self.init_weights(self.student_net, pretrained, backbone_init_cfg)
+        for t in self.teacher_nets:
+            for param in t.parameters():
+                param.requires_grad = False
 
-    def init_weights(self, pretrained, backbone_init_cfg):
+    @staticmethod
+    def init_weights(net, pretrained, backbone_init_cfg):
         # even pretrained, still need init for eps
         if isinstance(backbone_init_cfg, str):
             initializer = getattr(mmcls.models.initializers, backbone_init_cfg)
-            initializer(self.backbone)
+            initializer(net)
         if pretrained is not None:
             logger = logging.getLogger()
-            load_checkpoint(self.backbone, pretrained, map_location='cpu',
+            load_checkpoint(net, pretrained, map_location='cpu',
                             strict=False, logger=logger)
             logger.info('load model from: {}'.format(pretrained))
 
@@ -53,19 +67,27 @@ class BaseClassifier(nn.Module):
             return self.forward_test(img, labels)
 
     def forward_train(self, imgs, labels):
-        outputs = self.backbone(imgs)
-        losses = self.get_loss(outputs, labels)
+        s_out = self.student_net(imgs)
+        with torch.no_grad():
+            t_out = 0
+            for t in self.teacher_nets:
+                t_out += t(imgs).softmax(dim=1)
+            t_out /= len(self.teacher_nets)
+        losses = self.get_loss(s_out, t_out, labels)
         return losses
 
     def forward_test(self, imgs, labels):
-        outputs = self.backbone(imgs)
+        outputs = self.student_net(imgs)
         return outputs
 
-    @force_fp32(apply_to=('outputs', ))
-    def get_loss(self, outputs, labels):
+    @force_fp32(apply_to=('s_out', 't_out'))
+    def get_loss(self, s_out, t_out, labels):
         losses = dict()
-        losses['loss'] = self.loss(outputs, labels)
-        losses['acc'] = accuracy(outputs, labels)[0]
+        losses['ce_loss'] = \
+            self.ce_loss(s_out, labels) * (1-self.distill_loss_alpha)
+        losses['distill_loss'] = \
+            self.distill_loss(s_out, t_out) * self.distill_loss_alpha
+        losses['s_acc'] = accuracy(s_out, labels)[0]
         return losses
 
     def _parse_losses(self, losses):
@@ -118,4 +140,6 @@ class BaseClassifier(nn.Module):
         return outputs
 
     def get_model(self):
-        return self.backbone.state_dict()
+        if self.save_only_student:
+            return self.student_net.state_dict()
+        return self.state_dict()

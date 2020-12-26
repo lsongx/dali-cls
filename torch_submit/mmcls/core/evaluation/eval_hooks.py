@@ -10,26 +10,13 @@ import mmcv
 from mmcv.runner import Hook, obj_from_dict
 from mmcv.parallel import scatter, collate
 
-from mmcls.datasets import WarpDALIClassificationIterator as DALILoader
+from nvidia.dali.plugin.pytorch import DALIClassificationIterator
 
 from .accuracy import accuracy
 from ..utils import save_checkpoint, AverageMeter
 
 
 class DistEvalHook(Hook):
-    """We need two loaders here, since the default decoder (libjpeg-turbo
-    or nvJPEG library) leads to severe performance drop! According to my 
-    tests, the Top1 drops about 1%, for Res18, Res34 and Res50! INSANE!
-
-    No idea whether using the default decoder how affects the training.
-    A possible solution: re-build the dali lib, without including the
-    libjpeg-turbo, to enforce dali using the OpenCV decoder.
-
-    By the way, according to my test, visually there is hardly any difference
-    between the these decoders. Please refer to 
-        http://wiki.hobot.cc/pages/viewpage.action?pageId=68301317
-    for some demonstrations. 
-    """
 
     def __init__(self,
                  dataloader_fast,
@@ -51,7 +38,8 @@ class DistEvalHook(Hook):
         if not self.every_n_epochs(runner, self.interval):
             return
         if runner.epoch > self.switch_loader_epoch:
-            self.dataloader = self.dataloader_accurate
+            if self.dataloader_accurate is not None:
+                self.dataloader = self.dataloader_accurate
 
         top1 = self.evaluate(runner)
 
@@ -91,11 +79,10 @@ class DistEvalTopKHook(DistEvalHook):
     def evaluate(self, runner):
         runner.model.eval()
 
-        if isinstance(self.dataloader, DALILoader):
-            top1 = torch.zeros(1, device=f'cuda:{runner.rank}')
-            top5 = torch.zeros(1, device=f'cuda:{runner.rank}')
-            size = torch.tensor(self.dataloader._size,
-                                device=f'cuda:{runner.rank}')
+        if isinstance(self.dataloader, DALIClassificationIterator):
+            top1 = torch.zeros(1, dtype=torch.float, device=f'cuda:{runner.rank}')
+            top5 = torch.zeros(1, dtype=torch.float, device=f'cuda:{runner.rank}')
+            size = torch.zeros(1, dtype=torch.float, device=f'cuda:{runner.rank}')
             for i, data in enumerate(self.dataloader):
                 x = data[0]["data"]
                 y = data[0]["label"].squeeze().cuda(non_blocking=True).long()
@@ -104,6 +91,7 @@ class DistEvalTopKHook(DistEvalHook):
                 prec1, prec5 = accuracy(output, y, (1, 5), False)
                 top1 += prec1
                 top5 += prec5
+                size += x.shape[0]
             dist.all_reduce(top1, op=dist.ReduceOp.SUM)
             dist.all_reduce(top5, op=dist.ReduceOp.SUM)
             dist.all_reduce(size, op=dist.ReduceOp.SUM)

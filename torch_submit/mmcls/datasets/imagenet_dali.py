@@ -4,7 +4,6 @@ import torch
 from nvidia.dali.plugin.pytorch import DALIClassificationIterator
 from nvidia.dali.pipeline import Pipeline
 import nvidia.dali.ops as ops
-import nvidia.dali.types as types
 
 from mmcv.runner import obj_from_dict
 
@@ -115,19 +114,38 @@ def build_dali_loader(cfg, local_rank, world_size):
         pipe = DALITrainPipe(local_rank=local_rank, 
                              world_size=world_size, **cfg)
         pipe.build()
-        size = int(pipe.epoch_size("Reader") / world_size)
-        loader = WarpDALIClassificationIterator(
-            pipe, size=size, fill_last_batch=False, auto_reset=True)
-        loader._epoch_length = math.ceil(loader._size / cfg.get('batch_size'))
+        # loader = WarpDALIClassificationIterator(pipe)
+        # loader = WarpDALIClassificationIterator(
+        #     pipe, reader_name="Reader", last_batch_policy=LastBatchPolicy.DROP,
+        #     last_batch_padded=True, auto_reset=True)
+        try:
+            from nvidia.dali.plugin.base_iterator import LastBatchPolicy
+            loader = DALIClassificationIterator(
+                pipe, reader_name="Reader", 
+                last_batch_policy=LastBatchPolicy.PARTIAL, auto_reset=True)
+        except:
+            size = int(pipe.epoch_size("Reader") / world_size)
+            loader = WarpDALIClassificationIterator(
+                pipe, reader_name="Reader", fill_last_batch=False, auto_reset=True)
+            loader._epoch_length = math.floor(size / cfg.get('batch_size'))
         return loader
     elif cfg_type == 'val':
         pipe = DALIValPipe(local_rank=local_rank, 
                            world_size=world_size, **cfg)
         pipe.build()
-        size = int(pipe.epoch_size("Reader") / world_size)
-        loader = WarpDALIClassificationIterator(
-            pipe, size=size, fill_last_batch=False, auto_reset=True)
-        loader._epoch_length = math.ceil(loader._size / cfg.get('batch_size'))
+        # loader = WarpDALIClassificationIterator(
+        #     pipe, last_batch_policy=LastBatchPolicy.PARTIAL, 
+        #     last_batch_padded=True, auto_reset=True)
+        try:
+            from nvidia.dali.plugin.base_iterator import LastBatchPolicy
+            loader = DALIClassificationIterator(
+                pipe, reader_name="Reader", 
+                last_batch_policy=LastBatchPolicy.PARTIAL, auto_reset=True)
+        except:
+            size = int(pipe.epoch_size("Reader") / world_size)
+            loader = WarpDALIClassificationIterator(
+                pipe, reader_name="Reader", fill_last_batch=False, auto_reset=True)
+            loader._epoch_length = math.floor(size / cfg.get('batch_size'))
         return loader
     else:
         raise NotImplementedError

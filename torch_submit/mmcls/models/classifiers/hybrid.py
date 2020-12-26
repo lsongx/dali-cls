@@ -1,14 +1,14 @@
 import logging
+from collections import OrderedDict
 
 import mmcv
 from mmcv.runner import obj_from_dict
-# ------- there is a bug in mmcv 2.10
-# from mmcv.runner import load_checkpoint 
 from mmcls.utils.checkpoint import load_checkpoint
 
 import numpy as np
 import torch
 import torch.nn as nn
+import torch.distributed as dist
 
 import mmcls
 from mmcls.core import auto_fp16, force_fp32
@@ -156,6 +156,55 @@ class Hybrid(nn.Module):
         losses['s_loss'] = self.loss(s_out, labels)
         losses['s_acc'] = accuracy(s_out, labels)[0]
         return losses
+
+    def _parse_losses(self, losses):
+        log_vars = OrderedDict()
+        for loss_name, loss_value in losses.items():
+            if isinstance(loss_value, torch.Tensor):
+                log_vars[loss_name] = loss_value.mean()
+            elif isinstance(loss_value, list):
+                log_vars[loss_name] = sum(_loss.mean() for _loss in loss_value)
+            elif isinstance(loss_value, dict):
+                for name, value in loss_value.items():
+                    log_vars[name] = value
+            else:
+                raise TypeError(
+                    f'{loss_name} is not a tensor or list of tensors')
+
+        loss = sum(_value for _key, _value in log_vars.items()
+                   if 'loss' in _key)
+
+        log_vars['loss'] = loss
+        for loss_name, loss_value in log_vars.items():
+            # reduce loss when distributed training
+            if dist.is_available() and dist.is_initialized():
+                loss_value = loss_value.data.clone()
+                dist.all_reduce(loss_value.div_(dist.get_world_size()))
+            log_vars[loss_name] = loss_value.item()
+
+        return loss, log_vars
+
+    def train_step(self, data, optimizer):
+        x = data[0]["data"]
+        y = data[0]["label"].squeeze().cuda().long()
+        losses = self(x, y)
+        loss, log_vars = self._parse_losses(losses)
+
+        outputs = dict(
+            loss=loss, log_vars=log_vars, num_samples=int(x.shape[0]))
+
+        return outputs
+
+    def val_step(self, data, optimizer):
+        x = data[0]["data"]
+        y = data[0]["label"].squeeze().cuda().long()
+        losses = self(x, y)
+        loss, log_vars = self._parse_losses(losses)
+
+        outputs = dict(
+            loss=loss, log_vars=log_vars, num_samples=int(x.shape[0]))
+
+        return outputs
 
     def get_model(self):
         if self.save_only_student:

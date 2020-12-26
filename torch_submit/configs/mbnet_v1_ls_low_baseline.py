@@ -39,7 +39,7 @@ data = dict(
             dict(
                 type='CropMirrorNormalize',
                 device='gpu',
-                crop=224,
+                crop=(224, 224),
                 mean=[0.485 * 255, 0.456 * 255, 0.406 * 255],
                 std=[0.229 * 255, 0.224 * 255, 0.225 * 255],
                 run_params=[
@@ -72,12 +72,13 @@ data = dict(
             type='MXNetReader',
             path=["./data/val_orig.rec"],
             index_path=["./data/val_orig.idx"])),
-    val_cfg_accurate=dict(
-        type='val',
-        engine='torchvision',
-        batch_size=64,
-        num_workers=8,
-        dataset_cfg=dict(root="./data/val")))
+    # val_cfg_accurate=dict(
+    #     type='val',
+    #     engine='torchvision',
+    #     batch_size=64,
+    #     num_workers=8,
+    #     dataset_cfg=dict(root="./data/val")))
+)
 # optimizer
 optimizer = dict(type='SGD', lr=0.1, momentum=0.9, weight_decay=4e-5)
 # learning policy

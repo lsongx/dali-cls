@@ -1,3 +1,4 @@
+import nvidia.dali.types as types
 # fp16 settings
 fp16 = dict(loss_scale=512.)
 
@@ -30,8 +31,15 @@ data = dict(
         batch_size=64,
         num_threads=16,
         augmentations=[
-            dict(type='ImageDecoderRandomCrop', device='mixed'),
-            dict(type='Resize', device='gpu', resize_x=224, resize_y=224),
+            dict(type='ImageDecoder', device='mixed'),
+            dict(
+                type='RandomResizedCrop', 
+                device='gpu',
+                size=224,
+                random_area=[0.08, 1.0],
+                min_filter=types.INTERP_TRIANGULAR,
+                mag_filter=types.INTERP_LANCZOS3,
+                minibatch_size=16),
             dict(
                 type='ColorTwist', 
                 device='gpu',
@@ -43,7 +51,7 @@ data = dict(
             dict(
                 type='CropMirrorNormalize', 
                 device='gpu', 
-                crop=224, 
+                crop=(224, 224),
                 mean=[0.485 * 255, 0.456 * 255, 0.406 * 255],
                 std=[0.229 * 255, 0.224 * 255, 0.225 * 255],
                 run_params=[
@@ -59,6 +67,21 @@ data = dict(
         engine='dali',
         batch_size=64,
         num_threads=8,
+        augmentations=[
+            dict(type='ImageDecoder', device='mixed'),
+            dict(
+                type='Resize', 
+                device='gpu',
+                resize_shorter=256,
+                min_filter=types.INTERP_TRIANGULAR,
+                mag_filter=types.INTERP_LANCZOS3,
+                minibatch_size=16),
+            dict(
+                type='CropMirrorNormalize',
+                device='gpu',
+                crop=(224, 224),
+                mean=[0.485 * 255, 0.456 * 255, 0.406 * 255],
+                std=[0.229 * 255, 0.224 * 255, 0.225 * 255],)],
         reader_cfg=dict(
             type='MXNetReader',
             path=["./data/val_c224_q95.rec"],
@@ -74,9 +97,17 @@ data = dict(
         dataset_cfg=dict(root="./data/val")))
 # optimizer
 optimizer = dict(type='SGD', lr=0.1, momentum=0.9, weight_decay=1e-4)
+# optimizer = dict(type='SGD', lr=0.045, momentum=0.9, weight_decay=0.00004)
 # learning policy
 # lr_config = dict(policy='cosine', warmup='linear', warmup_iters=5008, target_lr=1e-4, by_epoch=False)
-lr_config = dict(policy='cosine', target_lr=1e-4, by_epoch=False)
+# lr_config = dict(policy='cosine', target_lr=1e-4, by_epoch=False)
+lr_config = dict(
+    policy='step',
+    # warmup='linear',
+    # warmup_iters=2500,
+    # warmup_ratio=0.25,
+    step=[30, 60, 90])
+runner = dict(type='EpochBasedRunner', max_epochs=100)
 # misc settings
 log_config = dict(
     interval=200,
@@ -84,8 +115,8 @@ log_config = dict(
         dict(type='TextLoggerHook'),
         dict(type='TensorboardLoggerHook', log_dir='./logs')
     ])
+checkpoint_config = dict(interval=1)
 evaluation = dict(interval=1, switch_loader_epoch=110)
-total_epochs = 120
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
 work_dir = './data/out'
