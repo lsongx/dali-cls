@@ -63,9 +63,9 @@ def parse_args():
     #                     # default='~/data/models/resnet50-19c8e357.pth')
     #                     default='~/data/models/resnet18-5c106cde.pth')
 
-    # parser.add_argument('--data.train_cfg.batch_size', type=int, default=128)
-    # parser.add_argument('--log_config.interval', type=int, default=1)
-    # parser.add_argument('--optimizer.lr', type=float, default=0.1)
+    parser.add_argument('--data.train_cfg.batch_size', type=int, default=128)
+    parser.add_argument('--log_config.interval', type=int, default=1)
+    parser.add_argument('--optimizer.lr', type=float, default=0.1)
 
     parser.add_argument('--use_fp16', type=int, default=1)
 

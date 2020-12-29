@@ -4,38 +4,22 @@ fp16 = dict(loss_scale=512.)
 
 # model settings
 model = dict(
-    type='Distill',
-    teacher_nets=[
-        dict(
-            type='gluon_senet154',
-            checkpoint_path='./data/gluon_senet154-70a1a3c0.pth',
-            implement='timm'),
-        dict(
-            type='gluon_resnet152_v1s',
-            checkpoint_path='./data/gluon_resnet152_v1s-dcc41b81.pth',
-            implement='timm')],
-    student_net=dict(
-        type='tf_efficientnet_b0',
-        checkpoint_path='./data/tf_efficientnet_b0_aa-827b6e33.pth',
-        implement='timm'),
-    ce_loss=dict(
+    type='BaseClassifier',
+    backbone=dict(
+        type='mobilenet_v2',
+        implement='torchvision'),
+    loss=dict(
         type='CrossEntropySmoothLoss',
         implement='local',
         smoothing=0.1),
-    distill_loss=dict(
-        type='KLLoss',
-        with_soft_target=True,
-        implement='local',),
-    distill_loss_alpha=1,
-    # backbone_init_cfg='dw_conv',
-    pretrained=None)
+    backbone_init_cfg='dw_conv')
 # dataset settings
 data = dict(
     train_cfg=dict(
         type='train',
         engine='dali',
-        batch_size=85,
-        num_threads=4,
+        batch_size=256,
+        num_threads=16,
         augmentations=[
             dict(type='ImageDecoder', device='mixed'),
             dict(
@@ -45,7 +29,7 @@ data = dict(
                 random_area=[0.08, 1.0],
                 min_filter=types.INTERP_TRIANGULAR,
                 mag_filter=types.INTERP_LANCZOS3,
-                minibatch_size=4),
+                minibatch_size=16),
             # dict(
             #     type='ColorTwist', 
             #     device='gpu',
@@ -67,8 +51,8 @@ data = dict(
     val_cfg_fast=dict(
         type='val',
         engine='dali',
-        batch_size=16,
-        num_threads=4,
+        batch_size=64,
+        num_threads=8,
         augmentations=[
             dict(type='ImageDecoder', device='mixed'),
             dict(
@@ -77,7 +61,7 @@ data = dict(
                 resize_shorter=256,
                 min_filter=types.INTERP_TRIANGULAR,
                 mag_filter=types.INTERP_LANCZOS3,
-                minibatch_size=4),
+                minibatch_size=16),
             dict(
                 type='CropMirrorNormalize',
                 device='gpu',
@@ -86,22 +70,33 @@ data = dict(
                 std=[0.229 * 255, 0.224 * 255, 0.225 * 255],)],
         reader_cfg=dict(
             type='MXNetReader',
-            path=["./data/val_q95.rec"],
-            index_path=["./data/val_q95.idx"])),)
+            path=["./data/val_c224_q95.rec"],
+            index_path=["./data/val_c224_q95.idx"])),
         # reader_cfg=dict(
         #     type='FileReader',
         #     file_root=["./data/val"])))
-    # val_cfg_accurate=dict(
-    #     type='val',
-    #     engine='torchvision',
-    #     batch_size=64,
-    #     num_workers=8,
-    #     dataset_cfg=dict(root="./data/val")))
+    val_cfg_accurate=dict(
+        type='val',
+        engine='torchvision',
+        batch_size=64,
+        num_workers=8,
+        dataset_cfg=dict(root="./data/val")))
 # optimizer
-optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0)
+optimizer = dict(
+    type='SGD', 
+    lr=0.5, 
+    momentum=0.9, 
+    weight_decay=4e-5,)
 # learning policy
-lr_config = dict(policy='Step', step=[100])
-runner = dict(type='EpochBasedRunner', max_epochs=300)
+# lr_config = dict(policy='CosineAnnealing', warmup='linear', warmup_iters=1252, min_lr=1e-4, by_epoch=False)
+lr_config = dict(
+    policy='CosineAnnealing', 
+    warmup='linear', 
+    warmup_iters=5, 
+    warmup_by_epoch=True, 
+    min_lr=1e-5, 
+    by_epoch=False)
+runner = dict(type='EpochBasedRunner', max_epochs=240)
 # misc settings
 log_config = dict(
     interval=200,
@@ -109,7 +104,7 @@ log_config = dict(
         dict(type='TextLoggerHook'),
         dict(type='TensorboardLoggerHook', log_dir='./logs')
     ])
-evaluation = dict(interval=1, switch_loader_epoch=1e5)
+evaluation = dict(interval=1, switch_loader_epoch=250)
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
 work_dir = './data/out'
