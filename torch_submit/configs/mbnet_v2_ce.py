@@ -87,6 +87,8 @@ optimizer = dict(
     lr=0.5, 
     momentum=0.9, 
     weight_decay=4e-5,)
+    # paramwise_cfg=dict(
+    #     norm_decay_mult=0))
 # learning policy
 # lr_config = dict(policy='CosineAnnealing', warmup='linear', warmup_iters=1252, min_lr=1e-4, by_epoch=False)
 lr_config = dict(
