@@ -62,6 +62,7 @@ def _dist_train(model, cfg, validate=False, logger=None):
 
     # register hooks
     runner.register_training_hooks(lr_config=cfg.lr_config, 
+                                   checkpoint_config=cfg.checkpoint_config,
                                    optimizer_config=optimizer_config,
                                    log_config=cfg.log_config)
     # runner.register_hook(DistSamplerSeedHook())

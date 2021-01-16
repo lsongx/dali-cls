@@ -1,4 +1,3 @@
-import logging
 from collections import OrderedDict
 
 import torch
@@ -13,6 +12,7 @@ import torch.distributed as dist
 import mmcls
 from mmcls.core import auto_fp16, force_fp32
 from mmcls.core.evaluation import accuracy
+from mmcls.utils import get_root_logger
 
 from .. import builder
 from ..registry import CLASSIFIERS
@@ -40,7 +40,7 @@ class BaseClassifier(nn.Module):
             initializer = getattr(mmcls.models.initializers, backbone_init_cfg)
             initializer(self.backbone)
         if pretrained is not None:
-            logger = logging.getLogger()
+            logger = get_root_logger()
             load_checkpoint(self.backbone, pretrained, map_location='cpu',
                             strict=False, logger=logger)
             logger.info('load model from: {}'.format(pretrained))

@@ -1,3 +1,4 @@
+import torch
 from torch import nn
 
 import mmcls
@@ -18,8 +19,12 @@ def build(cfg, registry, default_args=None):
 def build_backbone(cfg):
     implement_source = cfg.pop('implement', 'torchvision')
     if implement_source == 'torchvision':
-        model = getattr(mmcls.models.backbones, cfg.pop('type'))
-        return model(**cfg)
+        checkpoint_path = cfg.pop('checkpoint_path', '')
+        model_cls = getattr(mmcls.models.backbones, cfg.pop('type'))
+        model = model_cls(**cfg)
+        if checkpoint_path:
+            model.load_state_dict(torch.load(checkpoint_path))
+        return model
     elif implement_source == 'timm':
         import timm
         model = timm.create_model(

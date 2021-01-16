@@ -71,7 +71,10 @@ class Distill(nn.Module):
         with torch.no_grad():
             t_out = 0
             for t in self.teacher_nets:
-                t_out += t(imgs).softmax(dim=1)
+                out = t(imgs)
+                if self.distill_loss.with_soft_target:
+                    out = out.softmax(dim=1)
+                t_out += out
             t_out /= len(self.teacher_nets)
         losses = self.get_loss(s_out, t_out, labels)
         return losses
@@ -86,8 +89,9 @@ class Distill(nn.Module):
         losses['ce_loss'] = \
             self.ce_loss(s_out, labels) * (1-self.distill_loss_alpha)
         losses['distill_loss'] = \
-            self.distill_loss(s_out, t_out) * self.distill_loss_alpha
+            self.distill_loss(s_out, t_out, labels) * self.distill_loss_alpha
         losses['s_acc'] = accuracy(s_out, labels)[0]
+        losses['t_acc'] = accuracy(t_out, labels)[0]
         return losses
 
     def _parse_losses(self, losses):

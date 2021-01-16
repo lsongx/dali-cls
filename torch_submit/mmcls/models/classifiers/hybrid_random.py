@@ -55,7 +55,7 @@ def adjust_bn_tracking(model, mode):
 
 
 @CLASSIFIERS.register_module
-class Hybrid(nn.Module):
+class HybridRandom(nn.Module):
     """Base class for Classifiers"""
 
     def __init__(self, 
@@ -71,11 +71,12 @@ class Hybrid(nn.Module):
                  teacher_backbone_init_cfg=None,
                  student_backbone_init_cfg=None,
                  ori_net_path_loss_alpha=0.5,
+                 switch_prob=0.5,
                  save_only_student=False):
         """teacher_channels, student_channels are the channels 
         of the connecting node.
         """
-        super(Hybrid, self).__init__()
+        super().__init__()
         self.fp16_enabled = False
         self.teacher_net = builder.build_backbone(teacher_net)
         self.student_net = builder.build_backbone(student_net)
@@ -84,6 +85,7 @@ class Hybrid(nn.Module):
         self.teacher_connect_index = teacher_connect_index
         self.student_connect_index = student_connect_index
         self.ori_net_path_loss_alpha = ori_net_path_loss_alpha
+        self.switch_prob = switch_prob
         self.save_only_student = save_only_student
 
         self.init_conn_channels(teacher_channels, student_channels)
@@ -121,10 +123,11 @@ class Hybrid(nn.Module):
             adjust_bn_tracking(self.student_net, False)
             for idx, (t, s) in enumerate(zip(self.t_idx, self.s_idx)):
                 # swith feature map
-                t_out_line, s_out_line = s_out_line, t_out_line
-                if idx > 0 and not self.ignore_conn_mask[idx-1]:
-                    t_out_line = self.s2t_conv_list[idx-1](t_out_line)
-                    s_out_line = self.t2s_conv_list[idx-1](s_out_line)
+                if np.random.random() > self.switch_prob:
+                    t_out_line, s_out_line = s_out_line, t_out_line
+                    if idx > 0 and not self.ignore_conn_mask[idx-1]:
+                        t_out_line = self.s2t_conv_list[idx-1](t_out_line)
+                        s_out_line = self.t2s_conv_list[idx-1](s_out_line)
                 t_out_line = \
                     self.teacher_net.sequence_warp[t[0]:t[1]](t_out_line)
                 s_out_line = \

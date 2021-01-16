@@ -6,19 +6,15 @@ fp16 = dict(loss_scale=512.)
 model = dict(
     type='BaseClassifier',
     backbone=dict(
-        type='MobilenetV1',
-        implement='local'),
-    loss=dict(
-        type='CrossEntropySmoothLoss',
-        implement='local',
-        smoothing=0.1),
-    backbone_init_cfg='dw_conv')
+        type='resnet18',
+        implement='torchvision'),
+    loss=dict(type='CrossEntropyLoss'))
 # dataset settings
 data = dict(
     train_cfg=dict(
         type='train',
         engine='dali',
-        batch_size=256,
+        batch_size=128,
         num_threads=16,
         augmentations=[
             dict(type='ImageDecoder', device='mixed'),
@@ -70,8 +66,8 @@ data = dict(
                 std=[0.229 * 255, 0.224 * 255, 0.225 * 255],)],
         reader_cfg=dict(
             type='MXNetReader',
-            path=["./data/val_c224_q95.rec"],
-            index_path=["./data/val_c224_q95.idx"])),
+            path=["./data/val_q95.rec"],
+            index_path=["./data/val_q95.idx"])),
         # reader_cfg=dict(
         #     type='FileReader',
         #     file_root=["./data/val"])))
@@ -82,11 +78,10 @@ data = dict(
         num_workers=8,
         dataset_cfg=dict(root="./data/val")))
 # optimizer
-optimizer = dict(type='SGD', lr=0.5, momentum=0.9, weight_decay=4e-5)
+optimizer = dict(type='SGD', lr=0.1, momentum=0.9, weight_decay=4e-5)
 # learning policy
-# lr_config = dict(policy='CosineAnnealing', warmup='linear', warmup_iters=1252, min_lr=1e-4, by_epoch=False)
-lr_config = dict(policy='CosineAnnealing', warmup='linear', warmup_iters=3, warmup_by_epoch=True, min_lr=1e-5, by_epoch=False)
-runner = dict(type='EpochBasedRunner', max_epochs=240)
+lr_config = dict(policy='step', step=[30, 60, 90])
+runner = dict(type='EpochBasedRunner', max_epochs=100)
 # misc settings
 checkpoint_config = dict(interval=1, max_keep_ckpts=1)
 log_config = dict(

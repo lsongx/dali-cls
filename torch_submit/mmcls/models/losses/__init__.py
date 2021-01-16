@@ -3,3 +3,4 @@ from .cross_entropy_smooth_loss import CrossEntropySmoothLoss
 from .cross_entropy_semantic_loss import CrossEntropySemanticLoss
 from .coding_loss import CodingLoss
 from .kl_loss import KLLoss
+from .wsl_loss import WSLLoss

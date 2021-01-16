@@ -1,9 +1,13 @@
 import argparse
+import time
 import os
-from mmcv import Config
 
-from mmcls.utils import update_cfg_from_args
-from mmcls.apis import train_model, init_dist, get_root_logger, set_random_seed
+import mmcv
+from mmcv import Config
+from mmcv.utils import collect_env
+
+from mmcls.utils import update_cfg_from_args, get_root_logger
+from mmcls.apis import train_model, init_dist, set_random_seed
 from mmcls.models import build_classifier
 import torch
 
@@ -33,32 +37,32 @@ def parse_args():
         help='job launcher')
     parser.add_argument('--local_rank', type=int, default=0)
 
-    parser.add_argument(
-        '--data.train_cfg.reader_cfg.path', type=str,
-        # default='~/data/imagenet/imagenet-rec-save/train_orig.rec'
-        default='~/data/imagenet/imagenet-rec-save/train_q95.rec'
-    )
-    parser.add_argument(
-        '--data.train_cfg.reader_cfg.index_path', type=str,
-        # default='~/data/imagenet/imagenet-rec-save/train_orig.idx'
-        default='~/data/imagenet/imagenet-rec-save/train_q95.idx'
-    )
-    parser.add_argument(
-        '--data.val_cfg_fast.reader_cfg.path', type=str,
-        default='~/data/imagenet/imagenet-rec-save/val_q95.rec'
-    )
-    parser.add_argument(
-        '--data.val_cfg_fast.reader_cfg.index_path', type=str,
-        default='~/data/imagenet/imagenet-rec-save/val_q95.idx'
-    )
     # parser.add_argument(
-    #     '--data.val_cfg_fast.reader_cfg.file_root', type=str,
+    #     '--data.train_cfg.reader_cfg.path', type=str,
+    #     # default='~/data/imagenet/imagenet-rec-save/train_orig.rec'
+    #     default='~/data/imagenet/imagenet-rec-save/train_q95.rec'
+    # )
+    # parser.add_argument(
+    #     '--data.train_cfg.reader_cfg.index_path', type=str,
+    #     # default='~/data/imagenet/imagenet-rec-save/train_orig.idx'
+    #     default='~/data/imagenet/imagenet-rec-save/train_q95.idx'
+    # )
+    # parser.add_argument(
+    #     '--data.val_cfg_fast.reader_cfg.path', type=str,
+    #     default='~/data/imagenet/imagenet-rec-save/val_q95.rec'
+    # )
+    # parser.add_argument(
+    #     '--data.val_cfg_fast.reader_cfg.index_path', type=str,
+    #     default='~/data/imagenet/imagenet-rec-save/val_q95.idx'
+    # )
+    # # parser.add_argument(
+    # #     '--data.val_cfg_fast.reader_cfg.file_root', type=str,
+    # #     default='~/data/imagenet/val'
+    # # )
+    # parser.add_argument(
+    #     '--data.val_cfg_accurate.dataset_cfg.root', type=str,
     #     default='~/data/imagenet/val'
     # )
-    parser.add_argument(
-        '--data.val_cfg_accurate.dataset_cfg.root', type=str,
-        default='~/data/imagenet/val'
-    )
     # parser.add_argument('--model.pretrained', type=str, 
     #                     # default='~/data/models/resnet50-19c8e357.pth')
     #                     default='~/data/models/resnet18-5c106cde.pth')
@@ -97,19 +101,38 @@ def main():
         distributed = True
         init_dist(args.launcher, **cfg.dist_params)
 
-    # init logger before other steps
-    logger = get_root_logger(cfg.log_level)
-    logger.info('Distributed training: {}'.format(distributed))
+    # create work_dir
+    mmcv.mkdir_or_exist(os.path.abspath(cfg.work_dir))
+    # init the logger before other steps
+    timestamp = time.strftime('%Y%m%d_%H%M%S', time.localtime())
+    log_file = os.path.join(cfg.work_dir, f'{timestamp}.log')
+    logger = get_root_logger(log_file=log_file, log_level=cfg.log_level)
+
+    # init the meta dict to record some important information such as
+    # environment info and seed, which will be logged
+    meta = dict()
+    # log env info
+    env_info_dict = collect_env()
+    env_info = '\n'.join([(f'{k}: {v}') for k, v in env_info_dict.items()])
+    dash_line = '-' * 60 + '\n'
+    # logger.info('Environment info:\n' + dash_line + env_info + '\n' +
+    #             dash_line)
+    meta['env_info'] = env_info
 
     # set random seeds
     if args.seed is not None:
         logger.info('Set random seed to {}'.format(args.seed))
         set_random_seed(args.seed)
+    cfg.seed = args.seed
+    meta['seed'] = args.seed
 
     model = build_classifier(cfg.model)
 
     cfg.local_rank = args.local_rank
     cfg.world_size = torch.distributed.get_world_size()
+
+    if cfg.checkpoint_config is not None:
+        cfg.checkpoint_config.meta = dict(config=cfg.text)
 
     train_model(
         model,

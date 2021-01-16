@@ -103,6 +103,7 @@ optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0)
 lr_config = dict(policy='Step', step=[100])
 runner = dict(type='EpochBasedRunner', max_epochs=300)
 # misc settings
+checkpoint_config = dict(interval=1, max_keep_ckpts=1)
 log_config = dict(
     interval=200,
     hooks=[

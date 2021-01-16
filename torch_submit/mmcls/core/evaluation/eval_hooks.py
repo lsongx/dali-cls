@@ -56,6 +56,8 @@ class DistEvalHook(Hook):
                 self.bestname = f'checkpoint_{self.best_top1:.2f}.pth'
                 if self.logger is not None:
                     self.logger.info(f'Saving best {self.bestname}.')
+            else:
+                self.logger.info(f'Current best {self.best_top1:.2f}.')
             save_checkpoint(runner.model.module.get_model(), is_best, self.out_dir,
                             bestname=self.bestname)
         dist.barrier()
