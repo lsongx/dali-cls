@@ -10,18 +10,19 @@ class WSLLoss(torch.nn.Module):
         labels: Label tensor of the criterion.
     """
 
-    def __init__(self, beta=1, with_soft_target=True):
+    def __init__(self, beta=1, with_soft_target=True, temperature=1):
         super().__init__()
         self.beta = beta
         self.with_soft_target = with_soft_target
+        self.temperature = temperature
         self.logsoftmax = torch.nn.LogSoftmax(dim=1)
         self.nll_loss = torch.nn.NLLLoss(reduction='none')
 
     def forward(self, student, teacher, label):
         if not self.with_soft_target:
-            teacher = teacher.softmax(dim=1)
+            teacher = (teacher/self.temperature).softmax(dim=1)
 
-        student_logsoftmax = self.logsoftmax(student)
+        student_logsoftmax = self.logsoftmax(student/self.temperature)
         softmax_loss_s = self.nll_loss(student_logsoftmax, label)
         softmax_loss_t = self.nll_loss(teacher.log(), label)
 
@@ -31,6 +32,6 @@ class WSLLoss(torch.nn.Module):
 
         batch_loss = torch.sum(-teacher * student_logsoftmax, 1)
         batch_loss *= wsl_weight.detach()**self.beta
+        batch_loss *= self.temperature**2
 
         return torch.mean(batch_loss)
-        

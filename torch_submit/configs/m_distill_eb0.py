@@ -6,14 +6,18 @@ fp16 = dict(loss_scale=512.)
 model = dict(
     type='Distill',
     teacher_nets=[
-        dict(
-            type='gluon_senet154',
-            checkpoint_path='./data/gluon_senet154-70a1a3c0.pth',
-            implement='timm'),
+        # dict(
+        #     type='gluon_senet154',
+        #     checkpoint_path='./data/gluon_senet154-70a1a3c0.pth',
+        #     implement='timm'),
         dict(
             type='gluon_resnet152_v1s',
             checkpoint_path='./data/gluon_resnet152_v1s-dcc41b81.pth',
             implement='timm')],
+        # dict(
+        #     type='resnet50',
+        #     checkpoint_path='./data/resnet50_ram-a26f946b.pth',
+        #     implement='timm'),],
     student_net=dict(
         type='tf_efficientnet_b0',
         checkpoint_path='./data/tf_efficientnet_b0_aa-827b6e33.pth',
@@ -26,6 +30,7 @@ model = dict(
         type='KLLoss',
         with_soft_target=True,
         implement='local',),
+    ce_loss_alpha=0,
     distill_loss_alpha=1,
     # backbone_init_cfg='dw_conv',
     pretrained=None)
@@ -46,13 +51,6 @@ data = dict(
                 min_filter=types.INTERP_TRIANGULAR,
                 mag_filter=types.INTERP_LANCZOS3,
                 minibatch_size=4),
-            # dict(
-            #     type='ColorTwist', 
-            #     device='gpu',
-            #     run_params=[
-            #         dict(type='Uniform', range=[0.6, 1.4], key='brightness'),
-            #         dict(type='Uniform', range=[0.6, 1.4], key='contrast'),
-            #         dict(type='Uniform', range=[0.6, 1.4], key='saturation'),]),
             dict(
                 type='CropMirrorNormalize', 
                 device='gpu', 
@@ -62,8 +60,8 @@ data = dict(
                 run_params=[dict(type='CoinFlip', probability=0.5, key='mirror')])],
         reader_cfg=dict(
             type='MXNetReader',
-            path=["./data/train_orig.rec"], 
-            index_path=["./data/train_orig.idx"])),
+            path=["./data/train_q95.rec"], 
+            index_path=["./data/train_q95.idx"])),
     val_cfg_fast=dict(
         type='val',
         engine='dali',
@@ -88,20 +86,13 @@ data = dict(
             type='MXNetReader',
             path=["./data/val_q95.rec"],
             index_path=["./data/val_q95.idx"])),)
-        # reader_cfg=dict(
-        #     type='FileReader',
-        #     file_root=["./data/val"])))
-    # val_cfg_accurate=dict(
-    #     type='val',
-    #     engine='torchvision',
-    #     batch_size=64,
-    #     num_workers=8,
-    #     dataset_cfg=dict(root="./data/val")))
 # optimizer
 optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0)
 # learning policy
-lr_config = dict(policy='Step', step=[100])
-runner = dict(type='EpochBasedRunner', max_epochs=300)
+# lr_config = dict(policy='Step', step=[100])
+# runner = dict(type='EpochBasedRunner', max_epochs=180)
+lr_config = dict(policy='Step', step=[40])
+runner = dict(type='EpochBasedRunner', max_epochs=80)
 # misc settings
 checkpoint_config = dict(interval=1, max_keep_ckpts=1)
 log_config = dict(

@@ -104,7 +104,7 @@ log_config = dict(
         dict(type='TensorboardLoggerHook', log_dir='./logs')
     ])
 evaluation = dict(interval=1, switch_loader_epoch=110)
-# param_adjust_hooks = [
+# extra_hooks = [
 #     dict(
 #         type='ModelParamAdjustHook',
 #         param_name_adjust_epoch_value = [

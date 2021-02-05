@@ -29,7 +29,7 @@ def parse_args():
         default=1,
         help='number of gpus to use '
         '(only applicable to non-distributed training)')
-    parser.add_argument('--seed', type=int, default=None, help='random seed')
+    parser.add_argument('--seed', type=int, default=1, help='random seed')
     parser.add_argument(
         '--launcher',
         choices=['none', 'pytorch', 'slurm', 'mpi'],
@@ -37,28 +37,28 @@ def parse_args():
         help='job launcher')
     parser.add_argument('--local_rank', type=int, default=0)
 
+    parser.add_argument(
+        '--data.train_cfg.reader_cfg.path', type=str,
+        # default='~/data/imagenet/imagenet-rec-save/train_orig.rec'
+        default='~/data/imagenet/imagenet-rec-save/train_q95.rec'
+    )
+    parser.add_argument(
+        '--data.train_cfg.reader_cfg.index_path', type=str,
+        # default='~/data/imagenet/imagenet-rec-save/train_orig.idx'
+        default='~/data/imagenet/imagenet-rec-save/train_q95.idx'
+    )
+    parser.add_argument(
+        '--data.val_cfg_fast.reader_cfg.path', type=str,
+        default='~/data/imagenet/imagenet-rec-save/val_q95.rec'
+    )
+    parser.add_argument(
+        '--data.val_cfg_fast.reader_cfg.index_path', type=str,
+        default='~/data/imagenet/imagenet-rec-save/val_q95.idx'
+    )
     # parser.add_argument(
-    #     '--data.train_cfg.reader_cfg.path', type=str,
-    #     # default='~/data/imagenet/imagenet-rec-save/train_orig.rec'
-    #     default='~/data/imagenet/imagenet-rec-save/train_q95.rec'
+    #     '--data.val_cfg_fast.reader_cfg.file_root', type=str,
+    #     default='~/data/imagenet/val'
     # )
-    # parser.add_argument(
-    #     '--data.train_cfg.reader_cfg.index_path', type=str,
-    #     # default='~/data/imagenet/imagenet-rec-save/train_orig.idx'
-    #     default='~/data/imagenet/imagenet-rec-save/train_q95.idx'
-    # )
-    # parser.add_argument(
-    #     '--data.val_cfg_fast.reader_cfg.path', type=str,
-    #     default='~/data/imagenet/imagenet-rec-save/val_q95.rec'
-    # )
-    # parser.add_argument(
-    #     '--data.val_cfg_fast.reader_cfg.index_path', type=str,
-    #     default='~/data/imagenet/imagenet-rec-save/val_q95.idx'
-    # )
-    # # parser.add_argument(
-    # #     '--data.val_cfg_fast.reader_cfg.file_root', type=str,
-    # #     default='~/data/imagenet/val'
-    # # )
     # parser.add_argument(
     #     '--data.val_cfg_accurate.dataset_cfg.root', type=str,
     #     default='~/data/imagenet/val'
@@ -91,8 +91,6 @@ def main():
     if not args.use_fp16:
         cfg.pop('fp16', {})
     update_cfg_from_args(args, cfg)
-    if args.local_rank == 0:
-        print(cfg)
 
     # init distributed env first, since logger depends on the dist info.
     if args.launcher == 'none':
@@ -107,6 +105,8 @@ def main():
     timestamp = time.strftime('%Y%m%d_%H%M%S', time.localtime())
     log_file = os.path.join(cfg.work_dir, f'{timestamp}.log')
     logger = get_root_logger(log_file=log_file, log_level=cfg.log_level)
+    if args.local_rank == 0:
+        logger.info(cfg)
 
     # init the meta dict to record some important information such as
     # environment info and seed, which will be logged

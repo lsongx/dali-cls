@@ -29,7 +29,10 @@ class Distill(nn.Module):
                  distill_loss, 
                  pretrained=None, 
                  backbone_init_cfg=None,
+                 ce_loss_alpha=1,
                  distill_loss_alpha=0.5,
+                 save_teacher_outputs=False,
+                 load_teacher_outputs=False,
                  save_only_student=True):
         """
         """
@@ -40,12 +43,20 @@ class Distill(nn.Module):
         self.student_net = builder.build_backbone(student_net)
         self.ce_loss = builder.build_loss(ce_loss)
         self.distill_loss = builder.build_loss(distill_loss)
+        self.ce_loss_alpha = ce_loss_alpha
         self.distill_loss_alpha = distill_loss_alpha
+        self.save_teacher_outputs = save_teacher_outputs
+        self.load_teacher_outputs = load_teacher_outputs
         self.save_only_student = save_only_student
         self.init_weights(self.student_net, pretrained, backbone_init_cfg)
+        if self.save_teacher_outputs:
+            self.epoch_teacher_outputs = {}
         for t in self.teacher_nets:
             for param in t.parameters():
                 param.requires_grad = False
+            for module in t.modules():
+                if isinstance(module, nn.modules.batchnorm._BatchNorm):
+                    module.momentum = 0
 
     @staticmethod
     def init_weights(net, pretrained, backbone_init_cfg):
@@ -67,15 +78,32 @@ class Distill(nn.Module):
             return self.forward_test(img, labels)
 
     def forward_train(self, imgs, labels):
-        s_out = self.student_net(imgs)
         with torch.no_grad():
             t_out = 0
-            for t in self.teacher_nets:
-                out = t(imgs)
-                if self.distill_loss.with_soft_target:
-                    out = out.softmax(dim=1)
-                t_out += out
-            t_out /= len(self.teacher_nets)
+            if self.load_teacher_outputs:
+                out_list = self.epoch_teacher_outputs[imgs.sum().item()]
+                for out in out_list:
+                    out = out.to(imgs.device)
+                    if self.distill_loss.with_soft_target:
+                        out = out.softmax(dim=1)
+                    t_out += out
+                t_out /= len(self.teacher_nets)
+            else:
+                if self.save_teacher_outputs:
+                    out_save = []
+                for t in self.teacher_nets:
+                    t.eval()
+                    out = t(imgs)
+                    if self.save_teacher_outputs:
+                        out_save.append(out.cpu())
+                    if self.distill_loss.with_soft_target:
+                        out = out.softmax(dim=1)
+                    t_out += out
+                if self.save_teacher_outputs:
+                    idx = imgs.sum().item()
+                    self.epoch_teacher_outputs[idx] = out_save
+                t_out /= len(self.teacher_nets)
+        s_out = self.student_net(imgs)
         losses = self.get_loss(s_out, t_out, labels)
         return losses
 
@@ -86,8 +114,7 @@ class Distill(nn.Module):
     @force_fp32(apply_to=('s_out', 't_out'))
     def get_loss(self, s_out, t_out, labels):
         losses = dict()
-        losses['ce_loss'] = \
-            self.ce_loss(s_out, labels) * (1-self.distill_loss_alpha)
+        losses['ce_loss'] = self.ce_loss(s_out, labels) * self.ce_loss_alpha
         losses['distill_loss'] = \
             self.distill_loss(s_out, t_out, labels) * self.distill_loss_alpha
         losses['s_acc'] = accuracy(s_out, labels)[0]

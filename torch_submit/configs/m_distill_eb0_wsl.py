@@ -6,14 +6,18 @@ fp16 = dict(loss_scale=512.)
 model = dict(
     type='Distill',
     teacher_nets=[
-        dict(
-            type='gluon_senet154',
-            checkpoint_path='./data/gluon_senet154-70a1a3c0.pth',
-            implement='timm'),
+        # dict(
+        #     type='gluon_senet154',
+        #     checkpoint_path='./data/gluon_senet154-70a1a3c0.pth',
+        #     implement='timm'),
         dict(
             type='gluon_resnet152_v1s',
             checkpoint_path='./data/gluon_resnet152_v1s-dcc41b81.pth',
             implement='timm')],
+        # dict(
+        #     type='resnet50',
+        #     checkpoint_path='./data/resnet50_ram-a26f946b.pth',
+        #     implement='timm'),],
     student_net=dict(
         type='tf_efficientnet_b0',
         checkpoint_path='./data/tf_efficientnet_b0_aa-827b6e33.pth',
@@ -24,9 +28,11 @@ model = dict(
         smoothing=0.1),
     distill_loss=dict(
         type='WSLLoss',
-        beta=2,
+        # beta=2,
+        beta=1,
         with_soft_target=True,
         implement='local',),
+    ce_loss_alpha=0,
     distill_loss_alpha=1,
     # backbone_init_cfg='dw_conv',
     pretrained=None)

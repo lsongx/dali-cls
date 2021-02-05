@@ -90,8 +90,6 @@ def main():
     if not args.use_fp16:
         cfg.pop('fp16', {})
     update_cfg_from_args(args, cfg)
-    if args.local_rank == 0:
-        print(cfg)
 
     # init distributed env first, since logger depends on the dist info.
     if args.launcher == 'none':
@@ -106,6 +104,8 @@ def main():
     timestamp = time.strftime('%Y%m%d_%H%M%S', time.localtime())
     log_file = os.path.join(cfg.work_dir, f'{timestamp}.log')
     logger = get_root_logger(log_file=log_file, log_level=cfg.log_level)
+    if args.local_rank == 0:
+        logger.info(cfg)
 
     # init the meta dict to record some important information such as
     # environment info and seed, which will be logged

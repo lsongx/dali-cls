@@ -31,13 +31,6 @@ data = dict(
                 min_filter=types.INTERP_TRIANGULAR,
                 mag_filter=types.INTERP_LANCZOS3,
                 minibatch_size=16),
-            # dict(
-            #     type='ColorTwist', 
-            #     device='gpu',
-            #     run_params=[
-            #         dict(type='Uniform', range=[0.6, 1.4], key='brightness'),
-            #         dict(type='Uniform', range=[0.6, 1.4], key='contrast'),
-            #         dict(type='Uniform', range=[0.6, 1.4], key='saturation'),]),
             dict(
                 type='CropMirrorNormalize', 
                 device='gpu', 
@@ -47,8 +40,8 @@ data = dict(
                 run_params=[dict(type='CoinFlip', probability=0.5, key='mirror')])],
         reader_cfg=dict(
             type='MXNetReader',
-            path=["./data/train_orig.rec"], 
-            index_path=["./data/train_orig.idx"])),
+            path=["./data/train_q95.rec"], 
+            index_path=["./data/train_q95.idx"])),
     val_cfg_fast=dict(
         type='val',
         engine='dali',
@@ -72,23 +65,20 @@ data = dict(
         reader_cfg=dict(
             type='MXNetReader',
             path=["./data/val_q95.rec"],
-            index_path=["./data/val_q95.idx"])),
-        # reader_cfg=dict(
-        #     type='FileReader',
-        #     file_root=["./data/val"])))
-    val_cfg_accurate=dict(
-        type='val',
-        engine='torchvision',
-        batch_size=64,
-        num_workers=8,
-        dataset_cfg=dict(root="./data/val")))
+            index_path=["./data/val_q95.idx"])),)
+    # val_cfg_accurate=dict(
+    #     type='val',
+    #     engine='torchvision',
+    #     batch_size=64,
+    #     num_workers=8,
+    #     dataset_cfg=dict(root="./data/val")))
 # optimizer
 optimizer = dict(type='SGD', lr=0.5, momentum=0.9, weight_decay=4e-5)
 # learning policy
-# lr_config = dict(policy='CosineAnnealing', warmup='linear', warmup_iters=1252, min_lr=1e-4, by_epoch=False)
 lr_config = dict(policy='CosineAnnealing', min_lr=1e-5, by_epoch=False)
 runner = dict(type='EpochBasedRunner', max_epochs=240)
 # misc settings
+checkpoint_config = dict(interval=1, max_keep_ckpts=1)
 log_config = dict(
     interval=200,
     hooks=[

@@ -81,10 +81,9 @@ def _dist_train(model, cfg, validate=False, logger=None):
         eval_cfg['logger'] = logger
         runner.register_hook(
             DistEvalTopKHook(val_loader_fast, val_loader_accurate, **eval_cfg))
-    for param_adjust_hook in cfg.get('param_adjust_hooks', []):
-        param_adjust_hook['logger'] = logger
-        runner.register_hook(
-            obj_from_dict(param_adjust_hook, mmcls.core.evaluation))
+    for hook in cfg.get('extra_hooks', []):
+        hook['logger'] = logger
+        runner.register_hook(obj_from_dict(hook, mmcls.core.hooks))
 
     if cfg.resume_from:
         runner.resume(cfg.resume_from)

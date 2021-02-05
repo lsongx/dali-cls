@@ -4,28 +4,21 @@ fp16 = dict(loss_scale=512.)
 
 # model settings
 model = dict(
-    type='Hybrid',
-    teacher_net=dict(
-        type='SequenceResNet',
-        depth=50,
-        implement='local'),
-    student_net=dict(
-        type='SequenceMobilenetV1',
-        implement='local'),
-    loss=dict(type='CrossEntropyLoss'),
-    # teacher_connect_index=(7, 11, 17, 20),
-    # student_connect_index=(5, 8, 15, 18),
-    teacher_connect_index=(11, 20),
-    student_connect_index=(8, 18),
-    student_channels=(256, 1024),
-    teacher_pretrained='./data/resnet50-19c8e357.pth',
-    ori_net_path_loss_alpha=0.7)
+    type='BaseClassifier',
+    backbone=dict(
+        type='mobilenetv2_100',
+        implement='timm'),
+    loss=dict(
+        type='CrossEntropySmoothLoss',
+        implement='local',
+        smoothing=0.1),
+    backbone_init_cfg='dw_conv')
 # dataset settings
 data = dict(
     train_cfg=dict(
         type='train',
         engine='dali',
-        batch_size=48,
+        batch_size=256,
         num_threads=16,
         augmentations=[
             dict(type='ImageDecoder', device='mixed'),
@@ -36,14 +29,7 @@ data = dict(
                 random_area=[0.08, 1.0],
                 min_filter=types.INTERP_TRIANGULAR,
                 mag_filter=types.INTERP_LANCZOS3,
-                minibatch_size=8),
-            # dict(
-            #     type='ColorTwist', 
-            #     device='gpu',
-            #     run_params=[
-            #         dict(type='Uniform', range=[0.6, 1.4], key='brightness'),
-            #         dict(type='Uniform', range=[0.6, 1.4], key='contrast'),
-            #         dict(type='Uniform', range=[0.6, 1.4], key='saturation'),]),
+                minibatch_size=16),
             dict(
                 type='CropMirrorNormalize', 
                 device='gpu', 
@@ -53,12 +39,12 @@ data = dict(
                 run_params=[dict(type='CoinFlip', probability=0.5, key='mirror')])],
         reader_cfg=dict(
             type='MXNetReader',
-            path=["./data/train_orig.rec"], 
-            index_path=["./data/train_orig.idx"])),
+            path=["./data/train_q95.rec"], 
+            index_path=["./data/train_q95.idx"])),
     val_cfg_fast=dict(
         type='val',
         engine='dali',
-        batch_size=32,
+        batch_size=64,
         num_threads=8,
         augmentations=[
             dict(type='ImageDecoder', device='mixed'),
@@ -68,7 +54,7 @@ data = dict(
                 resize_shorter=256,
                 min_filter=types.INTERP_TRIANGULAR,
                 mag_filter=types.INTERP_LANCZOS3,
-                minibatch_size=8),
+                minibatch_size=16),
             dict(
                 type='CropMirrorNormalize',
                 device='gpu',
@@ -77,23 +63,26 @@ data = dict(
                 std=[0.229 * 255, 0.224 * 255, 0.225 * 255],)],
         reader_cfg=dict(
             type='MXNetReader',
-            path=["./data/val_c224_q95.rec"],
-            index_path=["./data/val_c224_q95.idx"])),
-        # reader_cfg=dict(
-        #     type='FileReader',
-        #     file_root=["./data/val"])))
-    val_cfg_accurate=dict(
-        type='val',
-        engine='torchvision',
-        batch_size=64,
-        num_workers=8,
-        dataset_cfg=dict(root="./data/val")))
+            path=["./data/val_q95.rec"],
+            index_path=["./data/val_q95.idx"])),)
 # optimizer
-# optimizer = dict(type='SGD', lr=0.1, momentum=0.9, weight_decay=4e-5)
-optimizer = dict(type='SGD', lr=0.1, momentum=0.9, weight_decay=5e-6)
+optimizer = dict(
+    type='SGD', 
+    lr=0.5, 
+    momentum=0.9, 
+    weight_decay=4e-5,)
+    # paramwise_cfg=dict(
+    #     norm_decay_mult=0))
 # learning policy
-lr_config = dict(policy='step', step=[30, 60, 90])
-runner = dict(type='EpochBasedRunner', max_epochs=100)
+# lr_config = dict(policy='CosineAnnealing', warmup='linear', warmup_iters=1252, min_lr=1e-4, by_epoch=False)
+lr_config = dict(
+    policy='CosineAnnealing', 
+    warmup='linear', 
+    warmup_iters=5, 
+    warmup_by_epoch=True, 
+    min_lr=1e-5, 
+    by_epoch=False)
+runner = dict(type='EpochBasedRunner', max_epochs=240)
 # misc settings
 checkpoint_config = dict(interval=1, max_keep_ckpts=1)
 log_config = dict(
@@ -102,12 +91,7 @@ log_config = dict(
         dict(type='TextLoggerHook'),
         dict(type='TensorboardLoggerHook', log_dir='./logs')
     ])
-evaluation = dict(interval=1, switch_loader_epoch=110)
-# extra_hooks = [
-#     dict(
-#         type='ModelParamAdjustHook',
-#         param_name_adjust_epoch_value = [
-#             ('ori_net_path_loss_alpha', 0, 0.9)],)]
+evaluation = dict(interval=1, switch_loader_epoch=250)
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
 work_dir = './data/out'

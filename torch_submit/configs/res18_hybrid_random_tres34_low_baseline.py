@@ -20,8 +20,8 @@ model = dict(
     student_connect_index=(8, 12),
     student_channels=(128, 512),
     teacher_pretrained='./data/resnet34-333f7ec4.pth',
-    ori_net_path_loss_alpha=0.9)
-    # ori_net_path_loss_alpha=0.7)
+    # ori_net_path_loss_alpha=0.9)
+    ori_net_path_loss_alpha=0)
 # dataset settings
 data = dict(
     train_cfg=dict(
@@ -80,16 +80,16 @@ data = dict(
         reader_cfg=dict(
             type='MXNetReader',
             path=["./data/val_c224_q95.rec"],
-            index_path=["./data/val_c224_q95.idx"])),
+            index_path=["./data/val_c224_q95.idx"])),)
         # reader_cfg=dict(
         #     type='FileReader',
         #     file_root=["./data/val"])))
-    val_cfg_accurate=dict(
-        type='val',
-        engine='torchvision',
-        batch_size=64,
-        num_workers=8,
-        dataset_cfg=dict(root="./data/val")))
+    # val_cfg_accurate=dict(
+    #     type='val',
+    #     engine='torchvision',
+    #     batch_size=64,
+    #     num_workers=8,
+    #     dataset_cfg=dict(root="./data/val")))
 # optimizer
 optimizer = dict(type='SGD', lr=0.1, momentum=0.9, weight_decay=4e-5)
 # learning policy
@@ -104,7 +104,7 @@ log_config = dict(
         dict(type='TensorboardLoggerHook', log_dir='./logs')
     ])
 evaluation = dict(interval=1, switch_loader_epoch=110)
-# param_adjust_hooks = [
+# extra_hooks = [
 #     dict(
 #         type='ModelParamAdjustHook',
 #         param_name_adjust_epoch_value = [

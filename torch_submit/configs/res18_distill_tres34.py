@@ -17,7 +17,10 @@ model = dict(
         with_soft_target=False,
         temperature=3,
         implement='local',),
-    ce_loss=dict(type='CrossEntropyLoss'),
+    ce_loss=dict(
+        type='CrossEntropySmoothLoss',
+        implement='local',
+        smoothing=0.1),
     distill_loss_alpha=0.1)
 # dataset settings
 data = dict(
