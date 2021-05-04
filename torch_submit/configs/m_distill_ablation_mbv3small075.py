@@ -30,12 +30,13 @@ model = dict(
     distill_loss_alpha=1,
     # backbone_init_cfg='dw_conv',
     pretrained=None)
+
 # dataset settings
 data = dict(
     train_cfg=dict(
         type='train',
         engine='dali',
-        batch_size=85,
+        batch_size=128,
         num_threads=4,
         augmentations=[
             dict(type='ImageDecoder', device='mixed'),
@@ -82,6 +83,7 @@ data = dict(
             type='MXNetReader',
             path=["./data/val_q95.rec"],
             index_path=["./data/val_q95.idx"])),)
+
 # optimizer
 optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0)
 # learning policy

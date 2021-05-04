@@ -23,7 +23,7 @@ def build_backbone(cfg):
         model_cls = getattr(mmcls.models.backbones, cfg.pop('type'))
         model = model_cls(**cfg)
         if checkpoint_path:
-            model.load_state_dict(torch.load(checkpoint_path))
+            model.load_state_dict(torch.load(checkpoint_path, 'cpu'))
         return model
     elif implement_source == 'timm':
         import timm

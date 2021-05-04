@@ -1,12 +1,12 @@
 from __future__ import division
 
-import re
 import torch
-from mmcv.runner import DistSamplerSeedHook, build_optimizer, obj_from_dict, build_runner
-from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
+from mmcv.runner import (DistSamplerSeedHook, Fp16OptimizerHook, obj_from_dict,
+                         OptimizerHook, build_optimizer, build_runner)
+from mmcv.parallel import MMDistributedDataParallel
 
 import mmcls
-from mmcls.core import DistOptimizerHook, DistEvalTopKHook, Fp16OptimizerHook
+from mmcls.core import DistOptimizerHook, DistEvalTopKHook
 from mmcls.datasets import build_dataloader
 
 from .env import get_root_logger
@@ -16,18 +16,19 @@ def train_model(model,
                 cfg,
                 distributed=False,
                 validate=False,
-                logger=None):
+                logger=None,
+                meta=None):
     if logger is None:
         logger = get_root_logger(cfg.log_level)
 
     # start training
     if distributed:
-        _dist_train(model, cfg, validate=validate, logger=logger)
+        _dist_train(model, cfg, validate=validate, logger=logger, meta=meta)
     else:
         _non_dist_train(model, cfg, validate=validate, logger=logger)
 
 
-def _dist_train(model, cfg, validate=False, logger=None):
+def _dist_train(model, cfg, validate=False, logger=None, meta=None):
     # prepare data loaders
     data_loaders = [
         build_dataloader(cfg.data.train_cfg, cfg.local_rank, cfg.world_size)
@@ -49,19 +50,27 @@ def _dist_train(model, cfg, validate=False, logger=None):
             batch_processor=None,
             optimizer=optimizer,
             work_dir=cfg.work_dir,
-            logger=logger,))
+            logger=logger,
+            meta=meta))
 
     # fp16 setting
     fp16_cfg = cfg.get('fp16', None)
     optimizer_config = cfg.get('optimizer_config', {})
     if fp16_cfg is not None:
-        optimizer_config = Fp16OptimizerHook(**optimizer_config,
-                                             **fp16_cfg)
+        optimizer_config = Fp16OptimizerHook(
+            **optimizer_config, **fp16_cfg, distributed=True)
+    elif 'type' not in optimizer_config:
+        optimizer_config = OptimizerHook(**optimizer_config)
     else:
-        optimizer_config = DistOptimizerHook(**optimizer_config)
+        optimizer_config = optimizer_config
 
     # register hooks
-    runner.register_training_hooks(lr_config=cfg.lr_config, 
+    lr_config_implement = cfg.lr_config.pop('implement', 'mmcv')
+    if lr_config_implement == 'local':
+        lr_config = obj_from_dict(cfg.lr_config, mmcls.core.hooks)
+    else:
+        lr_config = cfg.lr_config
+    runner.register_training_hooks(lr_config=lr_config, 
                                    checkpoint_config=cfg.checkpoint_config,
                                    optimizer_config=optimizer_config,
                                    log_config=cfg.log_config)

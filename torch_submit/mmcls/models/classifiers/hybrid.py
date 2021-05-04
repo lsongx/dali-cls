@@ -64,7 +64,7 @@ class Hybrid(nn.Module):
                  loss, 
                  teacher_connect_index,
                  student_connect_index,
-                 teacher_pretrained, 
+                 teacher_pretrained=None, 
                  student_pretrained=None, 
                  teacher_channels=None,
                  student_channels=None,

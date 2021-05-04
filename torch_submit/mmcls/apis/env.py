@@ -29,7 +29,7 @@ def _init_dist_pytorch(backend, **kwargs):
     num_gpus = torch.cuda.device_count()
     torch.cuda.set_device(rank % num_gpus)
     os.environ['MASTER_ADDR'] = 'localhost'
-    os.environ['MASTER_PORT'] = '29555'
+    os.environ['MASTER_PORT'] = '29554'
     dist.init_process_group(backend=backend, init_method="env://", **kwargs)
 
 

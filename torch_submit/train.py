@@ -118,6 +118,7 @@ def main():
     # logger.info('Environment info:\n' + dash_line + env_info + '\n' +
     #             dash_line)
     meta['env_info'] = env_info
+    # meta['config'] = cfg.pretty_text
 
     # set random seeds
     if args.seed is not None:
@@ -131,15 +132,13 @@ def main():
     cfg.local_rank = args.local_rank
     cfg.world_size = torch.distributed.get_world_size()
 
-    if cfg.checkpoint_config is not None:
-        cfg.checkpoint_config.meta = dict(config=cfg.text)
-
     train_model(
         model,
         cfg,
         distributed=distributed,
         validate=args.validate,
-        logger=logger)
+        logger=logger,
+        meta=meta)
 
 
 if __name__ == '__main__':

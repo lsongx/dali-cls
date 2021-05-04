@@ -114,12 +114,22 @@ class Distill(nn.Module):
     @force_fp32(apply_to=('s_out', 't_out'))
     def get_loss(self, s_out, t_out, labels):
         losses = dict()
-        losses['ce_loss'] = self.ce_loss(s_out, labels) * self.ce_loss_alpha
-        losses['distill_loss'] = \
-            self.distill_loss(s_out, t_out, labels) * self.distill_loss_alpha
+        losses.update(self._parse_loss_output(self.ce_loss(s_out, labels),
+                                              'ce_loss',
+                                              self.ce_loss_alpha))
+        losses.update(self._parse_loss_output(self.distill_loss(s_out, t_out, labels),
+                                              'distill_loss',
+                                              self.distill_loss_alpha))
         losses['s_acc'] = accuracy(s_out, labels)[0]
         losses['t_acc'] = accuracy(t_out, labels)[0]
         return losses
+
+    @staticmethod
+    def _parse_loss_output(loss, loss_name, multiplier):
+        if isinstance(loss, torch.Tensor):
+            return {loss_name: loss*multiplier}
+        elif isinstance(loss, dict):
+            return {loss_name: loss['loss']*multiplier, **loss['logs']}
 
     def _parse_losses(self, losses):
         log_vars = OrderedDict()

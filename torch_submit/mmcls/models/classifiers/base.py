@@ -53,6 +53,8 @@ class BaseClassifier(nn.Module):
             return self.forward_test(img, labels)
 
     def forward_train(self, imgs, labels):
+        # dist.barrier()
+        torch.cuda.synchronize()
         outputs = self.backbone(imgs)
         losses = self.get_loss(outputs, labels)
         return losses

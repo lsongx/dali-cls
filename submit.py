@@ -23,16 +23,21 @@ clusters:
         appkey: rvOHShPbASQCReoMoqJC
         endpoint: idc-train
         hdfs: hdfs://hobot-bigdata/
-    idc2080ti:
-        appid: HUVZDKBFaV
-        appkey: OJRsnhqRTBgexmuQwfOe
-        endpoint: idc-train
-        hdfs: hdfs://hobot-bigdata/
-    ksyun:
-        appid: YaeVpSrTrg
-        appkey: ZrCKLyYVgjKvPBvqjUhh
-        endpoint: ksyun-train.hobot.cc
-        hdfs: hdfs://hobot-bigdata/
+    idcv2:
+        appid: YzbVqHmyte
+        appkey: LRtqPlkPhlKdPaSURFVA
+        endpoint: idc-v2
+        hdfs: hdfs://hobot-bigdata-ucloud/
+    idcv2small:
+        appid: rflpcUpMEJ
+        appkey: rvOHShPbASQCReoMoqJC
+        endpoint: idc-v2
+        hdfs: hdfs://hobot-bigdata-ucloud/
+    aliyun:
+        appid: KlDOoYHgoZ
+        appkey: coRQRelanvAtBkvRsSXH
+        endpoint: aliyun-v2
+        hdfs: hdfs://hobot-bigdata-ucloud/
 '''
 
 CLUSTER_TO_J2FILE = {
@@ -41,6 +46,10 @@ CLUSTER_TO_J2FILE = {
         'run_scripts': ('py_job.sh.qsub.j2',),
     },
     'idc': {
+        'submit_scripts': ('py_submit.sh.idc.j2', 'py_job.yaml.j2'),
+        'run_scripts': ('py_job.sh.idc.j2',),
+    },
+    'idcv2': {
         'submit_scripts': ('py_submit.sh.idc.j2', 'py_job.yaml.j2'),
         'run_scripts': ('py_job.sh.idc.j2',),
     },
@@ -73,6 +82,9 @@ J2FILE_REQIRED_VARS = {
     'idc': {
         'worker': 'WORKER',
     },
+    'idcv2': {
+        'worker': 'WORKER',
+    },
     'ksyun': {
         'worker': 'WORKER',
     },
@@ -90,6 +102,9 @@ CLUSTER_SPECIFIC_PARA = {
     'idc': {
         # 'tensorboard_log_dir': '/job_tboard/'
     },
+    'idcv2': {
+        # 'tensorboard_log_dir': '/job_tboard/'
+    },
     'ksyun': {
         # 'tensorboard_log_dir': '/job_tboard/'
     },
@@ -104,11 +119,12 @@ STR_REPLACE = {
         lambda x: x.replace('conda_lib9_torch10', 'conda_lib8_torch10'),
     ],
     'idc': [],
+    'idcv2': [],
     'ksyun': [
         lambda x: x.replace('hobot-bigdata', 'ksbigdata'),
     ],
     'aliyun': [
-        lambda x: x.replace('hobot-bigdata', 'hobot-bigdata-aliyun'),
+        # lambda x: x.replace('hobot-bigdata', 'hobot-bigdata-aliyun'),
     ],
 }
 
