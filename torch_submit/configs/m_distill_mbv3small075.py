@@ -10,17 +10,18 @@ model = dict(
         #     type='gluon_senet154',
         #     checkpoint_path='./data/gluon_senet154-70a1a3c0.pth',
         #     implement='timm'),
-        # dict(
-        #     type='gluon_resnet152_v1s',
-        #     checkpoint_path='./data/gluon_resnet152_v1s-dcc41b81.pth',
-        #     implement='timm')],
         dict(
-            type='resnet50',
-            checkpoint_path='./data/resnet50_ram-a26f946b.pth',
-            implement='timm'),],
+            type='gluon_resnet152_v1s',
+            checkpoint_path='./data/gluon_resnet152_v1s-dcc41b81.pth',
+            implement='timm')],
+        # dict(
+        #     type='resnet50',
+        #     checkpoint_path='./data/resnet50_ram-a26f946b.pth',
+        #     implement='timm'),],
     student_net=dict(
         type='tf_mobilenetv3_small_075',
-        checkpoint_path='./data/tf_mobilenetv3_small_075-da427f52.pth',
+        # checkpoint_path='./data/tf_mobilenetv3_small_075-da427f52.pth',
+        checkpoint_path='./data/mbv3.pth',
         implement='timm'),
     ce_loss=dict(
         type='CrossEntropySmoothLoss',

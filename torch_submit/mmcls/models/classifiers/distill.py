@@ -11,7 +11,7 @@ import torch.nn as nn
 import torch.distributed as dist
 
 import mmcls
-from mmcls.core import auto_fp16, force_fp32
+from mmcv.runner import auto_fp16, force_fp32
 from mmcls.core.evaluation import accuracy
 
 from .. import builder

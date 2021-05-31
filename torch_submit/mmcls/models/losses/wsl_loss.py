@@ -14,6 +14,7 @@ class WSLLoss(torch.nn.Module):
                  beta=1, 
                  with_soft_target=True, 
                  temperature=1, 
+                 only_teacher_temperature=False,
                  remove_not_noisy_reg=False):
         super().__init__()
         self.beta = beta
@@ -21,13 +22,17 @@ class WSLLoss(torch.nn.Module):
         self.temperature = temperature
         self.logsoftmax = torch.nn.LogSoftmax(dim=1)
         self.nll_loss = torch.nn.NLLLoss(reduction='none')
+        self.only_teacher_temperature = only_teacher_temperature
         self.remove_not_noisy_reg = remove_not_noisy_reg
 
     def forward(self, student, teacher, label):
         if not self.with_soft_target:
             teacher = (teacher/self.temperature).softmax(dim=1)
 
-        student_logsoftmax_with_t = self.logsoftmax(student/self.temperature)
+        if self.only_teacher_temperature:
+            student_logsoftmax_with_t = self.logsoftmax(student)
+        else:
+            student_logsoftmax_with_t = self.logsoftmax(student/self.temperature)
         softmax_loss_s = self.nll_loss(student_logsoftmax_with_t, label)
         softmax_loss_t = self.nll_loss(teacher.log(), label)
 

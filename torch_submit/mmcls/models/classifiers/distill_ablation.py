@@ -59,7 +59,7 @@ class DistillAblation(Distill):
             # soft_target = soft_target*0.9+0.1/1000
             # t_out[mask] = soft_target[mask]
 
-            t_out = t1_out.softmax(dim=1)
+            t_out = (t1_out*4).softmax(dim=1)
             better_mask = t1_s_margin < 0 # t1 better than s
             worse_mask = ~better_mask
             t_wrong_mask = t_out.max(1).indices!=labels
