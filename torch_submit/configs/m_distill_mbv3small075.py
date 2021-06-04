@@ -10,14 +10,16 @@ model = dict(
         #     type='gluon_senet154',
         #     checkpoint_path='./data/gluon_senet154-70a1a3c0.pth',
         #     implement='timm'),
-        dict(
-            type='gluon_resnet152_v1s',
-            checkpoint_path='./data/gluon_resnet152_v1s-dcc41b81.pth',
-            implement='timm')],
         # dict(
-        #     type='resnet50',
-        #     checkpoint_path='./data/resnet50_ram-a26f946b.pth',
-        #     implement='timm'),],
+        #     type='gluon_resnet152_v1s',
+        #     checkpoint_path='./data/gluon_resnet152_v1s-dcc41b81.pth',
+        #     implement='timm')],
+        dict(
+            type='mobilenetv3_large_100',
+            checkpoint_path='./data/mobilenetv3_large_100_ra-f55367f5.pth',
+            # type='resnet50',
+            # checkpoint_path='./data/resnet50_ram-a26f946b.pth',
+            implement='timm'),],
     student_net=dict(
         type='tf_mobilenetv3_small_075',
         # checkpoint_path='./data/tf_mobilenetv3_small_075-da427f52.pth',
@@ -27,9 +29,16 @@ model = dict(
         type='CrossEntropySmoothLoss',
         implement='local',
         smoothing=0.1),
+    # distill_loss=dict(
+    #     type='KLLoss',
+    #     with_soft_target=True,
+    #     implement='local',),
     distill_loss=dict(
-        type='KLLoss',
-        with_soft_target=True,
+        type='WSLLoss',
+        temperature=0.7,
+        only_teacher_temperature=True,
+        with_soft_target=False,
+        remove_not_noisy_reg=True,
         implement='local',),
     ce_loss_alpha=0,
     distill_loss_alpha=1,
@@ -94,9 +103,10 @@ optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0)
 # learning policy
 # lr_config = dict(policy='Step', step=[100])
 # runner = dict(type='EpochBasedRunner', max_epochs=180)
-lr_config = dict(policy='Step', step=[40])
-# lr_config = dict(policy='CosineAnnealing', min_lr=1e-4, by_epoch=False)
-runner = dict(type='EpochBasedRunner', max_epochs=80)
+# lr_config = dict(policy='Step', step=[40])
+lr_config = dict(policy='CosineAnnealing', min_lr=5e-4, by_epoch=False)
+# runner = dict(type='EpochBasedRunner', max_epochs=80)
+runner = dict(type='EpochBasedRunner', max_epochs=60)
 # misc settings
 checkpoint_config = dict(interval=1, max_keep_ckpts=1)
 log_config = dict(

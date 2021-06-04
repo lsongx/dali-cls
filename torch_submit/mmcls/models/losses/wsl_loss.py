@@ -53,12 +53,14 @@ class WSLLoss(torch.nn.Module):
             ce_loss = torch.sum(-soft_target * student_logsoftmax, 1)
             distill_loss = torch.sum(-teacher * student_logsoftmax_with_t, 1)
             distill_loss *= wsl_weight**self.beta
-            distill_loss *= self.temperature**2
+            if not self.only_teacher_temperature:
+                distill_loss *= self.temperature**2
 
             batch_loss = ce_loss*(1-wsl_weight) + distill_loss*wsl_weight
         else:
             batch_loss = torch.sum(-teacher * student_logsoftmax_with_t, 1)
             batch_loss *= wsl_weight**self.beta
-            batch_loss *= self.temperature**2
+            if not self.only_teacher_temperature:
+                batch_loss *= self.temperature**2
 
         return torch.mean(batch_loss)
