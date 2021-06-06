@@ -46,6 +46,7 @@ class WSLv2Hook(Hook):
         self.logger.info(f'Current hooks:\n {runner._hooks}')
         # change loss
         runner.model.module.ce_loss_alpha = 0
+        runner.model.module.distill_loss_alpha = 1
         runner.model.module.distill_loss = mmcls.models.builder.build_loss(self.loss) 
         self.logger.info('WSLv2Hook is added')
         if runner.rank == 0:
