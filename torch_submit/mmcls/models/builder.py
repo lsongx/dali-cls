@@ -28,7 +28,7 @@ def build_backbone(cfg):
     elif implement_source == 'timm':
         import timm
         model = timm.create_model(
-            cfg.type.lower(), pretrained=False, 
+            cfg['type'].lower(), pretrained=False, 
             checkpoint_path=cfg.pop('checkpoint_path', ''))
         return model
     else:
