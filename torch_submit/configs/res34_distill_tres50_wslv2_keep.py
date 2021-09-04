@@ -10,8 +10,8 @@ model = dict(
         checkpoint_path='./data/resnet50-19c8e357.pth',
         implement='torchvision'),],
     student_net=dict(
-        type='MobilenetV1',
-        implement='local'),
+        type='resnet34',
+        implement='torchvision'),
     distill_loss=dict(
         type='WSLLoss',
         with_soft_target=False,
@@ -22,8 +22,7 @@ model = dict(
         implement='local',
         smoothing=0.1),
     ce_loss_alpha=1,
-    distill_loss_alpha=0.5,
-    backbone_init_cfg='dw_conv')
+    distill_loss_alpha=0.5)
 
 # dataset settings
 data = dict(
@@ -77,11 +76,16 @@ data = dict(
             type='MXNetReader',
             path=["./data/val_q95.rec"],
             index_path=["./data/val_q95.idx"])),)
-
+    # val_cfg_accurate=dict(
+    #     type='val',
+    #     engine='torchvision',
+    #     batch_size=64,
+    #     num_workers=8,
+    #     dataset_cfg=dict(root="./data/val"))
 # optimizer
 optimizer = dict(type='SGD', lr=0.5, momentum=0.9, weight_decay=4e-5)
-# optimizer_config = dict(grad_clip=dict(max_norm=10, norm_type=2))
 # learning policy
+# lr_config = dict(policy='CosineAnnealing', warmup='linear', warmup_iters=1252, min_lr=1e-4, by_epoch=False)
 lr_config = dict(
     type='CosineAnnealingLrUpdaterHook', 
     max_progress=240*1251, 
@@ -90,14 +94,15 @@ lr_config = dict(
     implement='local')
 runner = dict(type='EpochBasedRunner', max_epochs=300)
 # misc settings
+# misc settings
 extra_hooks = [
     dict(
         type='WSLv2Hook',
         switch_epoch=240,
         optimizer_cfg=dict(
-            type='SGD',
-            lr=5e-2,
-            momentum=0.9,
+            type='SGD', 
+            lr=5e-2, 
+            momentum=0.9, 
             weight_decay=0),
         lr_config=dict(
             type='CosineAnnealingLrUpdaterHook', 

@@ -15,13 +15,14 @@ import torchvision.transforms as transforms
 
 root = "./data/val"
 network_cfg = dict(type='MobilenetV1', implement='local')
-ckpt = './data/out/checkpoint_75.60.pth'
+ckpt = './data/out/checkpoint_75.49.pth'
 # network_cfg = dict(type='tf_mobilenetv3_small_075', implement='timm')
 # ckpt = './data/out/checkpoint_67.52.pth'
-# network_cfg = dict(type='resnet18', implement='torchvision')
-# ckpt = './data/out/checkpoint_74.35.pth'
+network_cfg = dict(type='resnet18', implement='torchvision')
+ckpt = './data/out/checkpoint_74.07.pth'
 
-use_dw_conv = True
+# use_dw_conv = True
+use_dw_conv = False
 
 val_transform = transforms.Compose([
     transforms.Resize(256),

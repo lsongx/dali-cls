@@ -6,12 +6,12 @@ fp16 = dict(loss_scale=512.)
 model = dict(
     type='Distill',
     teacher_nets=[dict(
-        type='resnet50',
-        checkpoint_path='./data/resnet50-19c8e357.pth',
+        type='resnet34',
+        checkpoint_path='./data/resnet34-333f7ec4.pth',
         implement='torchvision'),],
     student_net=dict(
-        type='MobilenetV1',
-        implement='local'),
+        type='tf_mobilenetv3_small_100',
+        implement='timm'),
     distill_loss=dict(
         type='WSLLoss',
         with_soft_target=False,
@@ -30,7 +30,7 @@ data = dict(
     train_cfg=dict(
         type='train',
         engine='dali',
-        batch_size=128,
+        batch_size=256,
         num_threads=16,
         augmentations=[
             dict(type='ImageDecoder', device='mixed'),
@@ -41,7 +41,7 @@ data = dict(
                 random_area=[0.08, 1.0],
                 min_filter=types.INTERP_TRIANGULAR,
                 mag_filter=types.INTERP_LANCZOS3,
-                minibatch_size=8),
+                minibatch_size=16),
             dict(
                 type='CropMirrorNormalize', 
                 device='gpu', 
@@ -56,7 +56,7 @@ data = dict(
     val_cfg_fast=dict(
         type='val',
         engine='dali',
-        batch_size=32,
+        batch_size=64,
         num_threads=8,
         augmentations=[
             dict(type='ImageDecoder', device='mixed'),
@@ -66,7 +66,7 @@ data = dict(
                 resize_shorter=256,
                 min_filter=types.INTERP_TRIANGULAR,
                 mag_filter=types.INTERP_LANCZOS3,
-                minibatch_size=8),
+                minibatch_size=16),
             dict(
                 type='CropMirrorNormalize',
                 device='gpu',
@@ -79,9 +79,14 @@ data = dict(
             index_path=["./data/val_q95.idx"])),)
 
 # optimizer
-optimizer = dict(type='SGD', lr=0.5, momentum=0.9, weight_decay=4e-5)
-# optimizer_config = dict(grad_clip=dict(max_norm=10, norm_type=2))
+optimizer = dict(
+    type='SGD', 
+    lr=0.5, 
+    momentum=0.9, 
+    weight_decay=4e-5,
+    paramwise_cfg=dict(norm_decay_mult=0))
 # learning policy
+# lr_config = dict(policy='CosineAnnealing', warmup='linear', warmup_iters=1252, min_lr=1e-4, by_epoch=False)
 lr_config = dict(
     type='CosineAnnealingLrUpdaterHook', 
     max_progress=240*1251, 
@@ -95,9 +100,9 @@ extra_hooks = [
         type='WSLv2Hook',
         switch_epoch=240,
         optimizer_cfg=dict(
-            type='SGD',
-            lr=5e-2,
-            momentum=0.9,
+            type='SGD', 
+            lr=5e-2, 
+            momentum=0.9, 
             weight_decay=0),
         lr_config=dict(
             type='CosineAnnealingLrUpdaterHook', 
@@ -113,8 +118,8 @@ extra_hooks = [
             remove_not_noisy_reg=True,
             implement='local',),
         teacher_nets=[dict(
-            type='resnet50',
-            checkpoint_path='./data/resnet50_ram-a26f946b.pth',
+            type='resnet34d',
+            checkpoint_path='./data/resnet34d_ra2-f8dcfcaf.pth',
             implement='timm'),],)]
 checkpoint_config = dict(interval=1, max_keep_ckpts=1)
 log_config = dict(

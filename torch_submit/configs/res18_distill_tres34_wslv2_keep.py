@@ -22,7 +22,7 @@ model = dict(
         implement='local',
         smoothing=0.1),
     ce_loss_alpha=1,
-    distill_loss_alpha=1,
+    distill_loss_alpha=0.5,
     backbone_init_cfg='dw_conv')
 
 # dataset settings
@@ -94,27 +94,36 @@ extra_hooks = [
     dict(
         type='WSLv2Hook',
         switch_epoch=240,
-        optimizer_cfg=dict(type='SGD', lr=1e-1, momentum=0.9, weight_decay=0),
-        lr_config=dict(type='CosineAnnealingLrUpdaterHook', 
-                       max_progress=60*1251, 
-                       base_progress=238*1251,
-                    #    min_lr=1e-3, 
-                       min_lr=1e-4, 
-                       by_epoch=False,),
-        loss=dict(type='WSLLoss',
-                #   temperature=2,
-                  temperature=1,
-                  with_soft_target=False,
-                  remove_not_noisy_reg=True,
-                  implement='local',),)]
+        optimizer_cfg=dict(
+            type='SGD', 
+            lr=5e-2, 
+            momentum=0.9, 
+            weight_decay=0),
+        lr_config=dict(
+            type='CosineAnnealingLrUpdaterHook', 
+            max_progress=62*1251, 
+            base_progress=239*1251,
+            min_lr=5e-4, 
+            by_epoch=False,),
+        loss=dict(
+            type='WSLLoss',
+            temperature=0.7,
+            only_teacher_temperature=True,
+            with_soft_target=False,
+            remove_not_noisy_reg=True,
+            implement='local',),
+        teacher_nets=[dict(
+            type='resnet34d',
+            checkpoint_path='./data/resnet34d_ra2-f8dcfcaf.pth',
+            implement='timm'),],)]
 checkpoint_config = dict(interval=1, max_keep_ckpts=1)
 log_config = dict(
     interval=200,
     hooks=[
         dict(type='TextLoggerHook'),
-        dict(type='TensorboardLoggerHook', log_dir='./logs')
+        # dict(type='TensorboardLoggerHook', log_dir='./logs')
     ])
-evaluation = dict(interval=1, switch_loader_epoch=250)
+evaluation = dict(interval=1, switch_loader_epoch=1e5)
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
 work_dir = './data/out'

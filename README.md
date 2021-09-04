@@ -89,3 +89,9 @@ Current pipeline object is no longer valid.
 ```
 
 __batch size 设为128时能跑, 怀疑是显存不够时报的错. 但是不用dali时是可以跑150 batch size的. 似乎dali需要更多显存.__
+
+
+
+```
+pip install --upgrade --extra-index-url https://developer.download.nvidia.com/compute/redist nvidia-dali-cuda110==0.28.0
+```
