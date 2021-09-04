@@ -118,13 +118,14 @@ extra_hooks = [
             remove_not_noisy_reg=True,
             implement='local',),
         teacher_nets=[dict(
-            type='resnet34d',
-            checkpoint_path='./data/resnet34d_ra2-f8dcfcaf.pth',
+            type='resnet34',
+            checkpoint_path='./data/resnet34-333f7ec4.pth',
+            implement='torchvision'),],)]
             # type='mobilenetv3_large_100',
             # checkpoint_path='./data/mobilenetv3_large_100_ra-f55367f5.pth',
             # type='resnet50',
             # checkpoint_path='./data/resnet50_ram-a26f946b.pth',
-            implement='timm'),],)]
+            # implement='timm'),],)]
 checkpoint_config = dict(interval=1, max_keep_ckpts=1)
 log_config = dict(
     interval=200,
